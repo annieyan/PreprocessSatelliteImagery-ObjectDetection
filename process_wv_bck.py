@@ -53,72 +53,6 @@ import csv
 """
 
 
-
-
-def detect_blackblock(img):
-    # check the # of pixels that with RGB values are all equal to 0
-    w,h,c = img.shape
-    black_pixel_count=0
-    threshold = 0.9 * w * h * 3
-    non_black_count = np.count_nonzero(img)
-    if non_black_count > threshold:
-        return False
-    else:
-        return True
-
-
-
-def detect_clouds(img,  boxes, classes):
-    mean_threshold_min = 160
-    w, h, _ = img.shape
-    print('w,h', w, h)
-    var_threshold = 18
-    rows_to_delete = list()
-    for i in range(boxes.shape[0]):
-        xmin, ymin, xmax, ymax = boxes[i]
-#         ymin = 0
-        if xmin < 0:
-            xmin = 0
-        if ymin<0:
-            y_min = 0
-        if xmax > h:
-            print('xmax > h')
-            xmax = h
-        if ymax > w:
-            print('ymax > w')
-            ymax= h
-        print(xmin, ymin, xmax, ymax)
-        # clip bbox areas
-        #cropped_img = img.crop((xmin, ymin, xmax, ymax))
-        cropped_img = img[int(ymin):int(ymax), int(xmin):int(xmax)]  # note the order of w/h
-#         print(cropped_img)
-#         print(cropped_img.shape)
-        array_img =  np.array(cropped_img)
-        mean_img = np.mean(array_img)
-        
-        print('mean_img', mean_img, i)
-        var_img = np.std(array_img)
-        print('var_img',var_img, i)
-        #if var_img < var_threshold and (cropped_img> 150).all() and (cropped_img< 255).all():
-        if var_img < var_threshold and mean_img > mean_threshold_min:
-            print('bounding box i has cloud', i)
-            # need to delete this bbox
-            rows_to_delete.append(i)
-    print('rows_to_delete',rows_to_delete)
-            
-    if len(rows_to_delete) == 0:
-        return img,  boxes, classes
-    else:
-        # return boxes and classes with clouds removed
-        new_coords = np.delete(boxes, rows_to_delete, axis=0)
-        new_classes = np.delete(classes, rows_to_delete, axis=0)
-        return img, new_coords, new_classes
-        
-        
-    
-
-
-
 def get_images_from_filename_array(coords,chips,classes,folder_names,res=(250,250)):
     """
     Gathers and chips all images within a given folder at a given resolution.
@@ -216,8 +150,8 @@ if __name__ == "__main__":
     #resolutions should be largest -> smallest.  We take the number of chips in the largest resolution and make
     #sure all future resolutions have less than 1.5times that number of images to prevent chip size imbalance.
     #res = [(500,500),(400,400),(300,300),(200,200)]
-    #res = [(300,300)]
-    res = [(512,512)]
+    res = [(300,300)]
+
     
     AUGMENT = args.augment
     # debug
@@ -230,8 +164,8 @@ if __name__ == "__main__":
 
     #Parameters
     max_chips_per_res = 100000
-    train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
-    test_writer = tf.python_io.TFRecordWriter("harvey_test_%s.record" % args.suffix)
+    train_writer = tf.python_io.TFRecordWriter("xview_train_%s.record" % args.suffix)
+    test_writer = tf.python_io.TFRecordWriter("xview_test_%s.record" % args.suffix)
 
     coords,chips,classes = wv.get_labels(args.json_filepath)
     # debug
@@ -244,21 +178,10 @@ if __name__ == "__main__":
 
     # debug
     sample_percent = args.sample_percent
-    # a list of classes to be augment: for example,
-    # 12: Small Aircraft,   15:Helicopter, 40:Maritime Vessel
-    # 33: railway vehicle,  42: Sailboat
-    #classes_to_augment = [15, 40]
-    #class_to_aug = [2, 3, 4]
-    class_to_aug = set([])
-    num_aug_per_class = {}  # class_id: # of augmentation generated
-    for class_id in class_to_aug:
-        num_aug_per_class[class_id] = 0
+    # a list of classes to be augment: for example,  15:Helicopter, 40:Maritime Vessel
+    classes_to_augment = [15, 40]
 
 
-    #debug
-    # for cloud removing and black portion removing
-    num_cloud_rm = 0  # number of 512 x 512 chips that have clouds removed
-    num_black = 0  # number of 512 x 512 chips that have black parts 
 
 
 
@@ -288,28 +211,13 @@ if __name__ == "__main__":
             #Shuffle images & boxes all at once. Comment out the line below if you don't want to shuffle images
             im,box,classes_final = shuffle_images_and_boxes_classes(im,box,classes_final)
             split_ind = int(im.shape[0] * args.test_percent)
-            
+
             for idx, image in enumerate(im):
                 if idx%sample_percent !=0:
                     continue
                  # debug
                 print('processing idx: ', idx)
-                # debug
-                # remove black block
-                if detect_blackblock(image):
-                    num_black +=1
-                    continue
-                # remove clouds
-                image, new_coords, new_classes = detect_clouds(image,box[idx],classes_final[idx])                
-                if len(new_coords)!= len(box[idx]):
-                    num_cloud_rm += 1
-
-                # debug: changed image,box[idx],classes_final[idx] to newly constructed img and box
-                #tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
-                tf_example = tfr.to_tf_example(image, new_coords, new_classes)
-                
-
-
+                tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
 
                 #Check to make sure that the TF_Example has valid bounding boxes.  
                 #If there are no valid bounding boxes, then don't save the image to the TFRecord.
@@ -326,76 +234,13 @@ if __name__ == "__main__":
                         train_chips += 1
      
                     ind_chips +=1
-                    
-                    # debug
-                    # store the images with bboxes for inspection
-                    if SAVE_IMAGES:
-                                    # debug: changed save dir
-                        aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect/img_%s_%s.png'%(name,str(idx)))
-
-                
-
 
                     #Make augmentation probability proportional to chip size.  Lower chip size = less chance.
                     #This makes the chip-size imbalance less severe.
                     prob = np.random.randint(0,np.max(res))
                     #for 200x200: p(augment) = 200/500 ; for 300x300: p(augment) = 300/500 ...
 
-
-
-                    # debug
-                    # added customized data augmentation for minor classes
-                    #class_to_aug = [2, 3, 4]  # damaged roads, trash heaps, and bridges
-                    # Minor classes will be augmented to 63 times larger with various augmentations
-                    # 1. Detect whether minor classes are in the small chips, if yes, augment 
-                    # this chip. The output will be a tensor of augmented images, bboxes, and classes
-                    # unpack the output to tfrecord TRAINING data. 
-                    # 2. If the chip does not contain any minor classes, go to normal augmentation
-                    #skip_augmentation = set()  # contains a list of chips that contain minor classes
-                    MINOR_CLASS_FLAG = False
-                    for class_id in class_to_aug:
-                        #num_aug_per_class[class_id] = 0
-                        #num_aug_this_class = 0
-                        # debug
-                        # print('checking whether this chip contain class: ', class_id)
-                        # this chip contains minor classes
-                        #if np.any(classes_final[idx][:]== class_id):
-                        if class_id in set(classes_final[idx]) and idx > split_ind:
-                          #       skip_augmentation.add(idx)
-                            MINOR_CLASS_FLAG = True
-                         #   print('trying to call expand_aug for chip: ', idx)
-                            im_aug,boxes_aug,classes_aug= aug.expand_aug(image, box[idx], classes_final[idx], class_id)  # marine time vessels
-                            #debug
-                            print('augmentig chip: ', idx)
-                            num_aug = 0
-                            for aug_idx, aug_image in enumerate(im_aug):
-                                tf_example_aug = tfr.to_tf_example(aug_image, boxes_aug[aug_idx],classes_aug[aug_idx])            
-                                #Check to make sure that the TF_Example has valid bounding boxes.  
-                #If there are no valid bounding boxes, then don't save the image to the TFRecord.
-                                float_list_value = tf_example_aug.features.feature['image/object/bbox/xmin'].float_list.value
-                                # debug
-                                #num_aug = 0
-                                if (np.array(float_list_value).any()):
-                                    tot_box+=np.array(float_list_value).shape[0]
-                    
-                                    train_writer.write(tf_example_aug.SerializeToString())
-                                    num_aug = num_aug + 1
-                                    train_chips+=1
-                                    num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
-                         #           num_aug_this_class=num_aug_this_class + 1
-                                    # debug
-                                    if aug_idx%5 == 0 and SAVE_IMAGES:
-                                    # debug: changed save dir
-                                        aug_image = (aug_image).astype(np.uint8)
-                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
-                            # debug
-                            print('augmenting class: ', class_id)
-                            print('number of augmentation: ',num_aug)
-                        #num_aug_per_class[class_id] = num_aug_this_class
-
-                    # it: iterator for different resolutions
-                    # start to augment the rest
-                    if AUGMENT and prob < it[0] and MINOR_CLASS_FLAG == False:
+                    if AUGMENT and prob < it[0]:
                         
                         for extra in range(3):
                             center = np.array([int(image.shape[0]/2),int(image.shape[1]/2)])
@@ -440,23 +285,15 @@ if __name__ == "__main__":
                             # debug:
                 	    # save image + bounding boxes for debug
                             #else:
-                                if SAVE_IMAGES:
+                                if idx%100 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
-                                    aug.draw_bboxes(newimg,nb).save('./harvey_augmented/img_aug_%s_%s_%s.png'%(name,extra,it[0]))
+                                    aug.draw_bboxes(newimg,nb).save('./augmented_img_60/img_nobox_%s_%s_%s.png'%(name,extra,it[0]))
         if res_ind == 0:
             max_chips_per_res = int(ind_chips * 1.5)
             logging.info("Max chips per resolution: %s " % max_chips_per_res)
 
         logging.info("Tot Box: %d" % tot_box)
         logging.info("Chips: %d" % ind_chips)
-
-    # debug
-    for key, val in num_aug_per_class.items():
-        print('for class:' , key)
-        print('augmentation applied: ', val)
-    # debug
-    print('num of black small chips removed: ', num_black)
-    print('num of small chips containing clouds:', num_cloud_rm)
 
     logging.info("saved: %d train chips" % train_chips)
     logging.info("saved: %d test chips" % test_chips)

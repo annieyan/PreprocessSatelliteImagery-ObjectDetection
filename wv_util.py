@@ -37,7 +37,7 @@ def get_image(fname):
     """
     return np.array(Image.open(fname))
 
-
+'''
 def get_labels(fname):
     """
     Gets label data from a geojson label file
@@ -70,6 +70,69 @@ def get_labels(fname):
             chips[i] = 'None'
 
     return coords, chips, classes
+'''
+
+
+# modified to buffer the bounding boxes by 15 pixels
+def get_labels(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+    # debug
+    x_off = 15
+    y_off = 15
+    right_shift = 5  # how much shift to the right 
+    add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try: 
+                b_id = data['features'][i]['properties']['IMAGE_ID']
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+                
+                ymin = val[3]
+                ymax = val[1]
+                val[1] =  ymin
+                val[3] = ymax
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['TYPE_ID']
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    coords = np.add(coords, add_np)
+    
+    return coords, chips, classes
+
+
+
+
+
+
+
 
 
 def boxes_from_coords(coords):
@@ -89,7 +152,7 @@ def boxes_from_coords(coords):
         nc[ind] = [x1,y1,x2,y2]
     return nc
 
-
+# # changed this function to discard bboxes that cut off to have less than 20 pixels in w/h 
 def chip_image(img,coords,classes,shape=(300,300)):
     """
     Chip an image and get relative coordinates and classes.  Bounding boxes that pass into
@@ -117,6 +180,10 @@ def chip_image(img,coords,classes,shape=(300,300)):
     total_boxes = {}
     total_classes = {}
     
+
+    # debug
+    threshold = 30  # threshold of # of pixels to discard bbox
+
     k = 0
     for i in range(w_num):
         for j in range(h_num):
@@ -131,6 +198,25 @@ def chip_image(img,coords,classes,shape=(300,300)):
                                           np.clip(outn[:,2]-(wn*i),0,wn),
                                           np.clip(outn[:,3]-(hn*j),0,hn))))
             box_classes = classes[x][y]
+             # debug
+            # remove bboxes that only have less than 20 pixels in w/h left in the image
+            # only loop through ones that have 0 or wn/hn in the 4 coordinates
+            rows_to_delete = list()
+            for m in range(out.shape[0]):
+                if(np.any([out[m] == 0]) or np.any([out[m] == wn]) or np.any([out[m] == hn])):
+                    # see whether the width of bbox is less than 10 pixels?
+                    bbox_w = out[m][2] - out[m][0]
+                    bbox_h = out[m][3] - out[m][1]
+                    if bbox_w < threshold or bbox_h < threshold:
+                        rows_to_delete.append(m)
+                        
+            # discard this bbox
+        
+            out = np.delete(out, rows_to_delete, axis=0)
+            box_classes = np.delete(box_classes, rows_to_delete, axis=0)            
+
+
+
             
             if out.shape[0] != 0:
                 total_boxes[k] = out
