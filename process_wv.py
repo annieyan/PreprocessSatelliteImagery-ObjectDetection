@@ -409,12 +409,18 @@ if __name__ == "__main__":
 
                             #.3 probability for each of shifting vs rotating vs shift(rotate(image))
                             p = np.random.randint(0,3)
+                            # debug
+                            # modified to use the removed cloud version of bboxes
+                            # image, new_coords, new_classes
                             if p == 0:
-                                newimg,nb = aug.shift_image(newimg,box[idx])
+                                newimg,nb = aug.shift_image(newimg,new_coords)
+                                #newimg,nb = aug.shift_image(newimg,box[idx])
                             elif p == 1:
-                                newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,box[idx])
+                                newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,new_coords)
+                                #newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,box[idx])
                             elif p == 2:
-                                newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,box[idx])
+                                newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,new_coords)
+                                #newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,box[idx])
                                 newimg,nb = aug.shift_image(newimg,nb)
                                 
 
@@ -426,7 +432,10 @@ if __name__ == "__main__":
                                 Image.fromarray(newimg).save('./augmented_img_60/img_%s_%s_%s.png'%(name,extra,it[0]))
 
                             if len(nb) > 0:
-                                tf_example = tfr.to_tf_example(newimg,nb,classes_final[idx])
+                                # debug
+                                # modified to use the cloud removed bboxs
+                                tf_example = tfr.to_tf_example(newimg,nb,new_classes)
+                                #tf_example = tfr.to_tf_example(newimg,nb,classes_final[idx])
 
                                 #Don't count augmented chips for chip indices
                                 # changed
