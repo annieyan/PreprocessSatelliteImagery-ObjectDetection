@@ -1,5 +1,5 @@
 '''
-Split train : test = 7:3
+Split train : test = 8:2
 create two folders: harvey_train_(round_num) and harvey_test_(round_num)
 create two geojson files respectively for train and test
 '''
@@ -81,7 +81,7 @@ def main():
     #move_files(os.path.abspath(src_dir))
     train_dir = 'harvey_train_first'
     test_dir = 'harvey_test_first'
-    seperate_nfiles(os.path.abspath(src_dir), train_dir, test_dir, 0.7)
+    seperate_nfiles(os.path.abspath(src_dir), train_dir, test_dir, 0.8)
 
 
 if __name__ == '__main__':

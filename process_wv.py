@@ -449,7 +449,7 @@ if __name__ == "__main__":
                             # debug:
                 	    # save image + bounding boxes for debug
                             #else:
-                                if SAVE_IMAGES:
+                                if idx%100 ==0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                     aug.draw_bboxes(newimg,nb).save('./harvey_augmented/img_aug_%s_%s_%s.png'%(name,extra,it[0]))
         if res_ind == 0:
