@@ -227,6 +227,24 @@ def parse_tif_names(small_tif_dir):
     return bad_big_tif_list
 
 
+# args: a csv file containing small image names which contains bad labels
+# read and parse the big tif names
+def parse_tif_names_from_csv(path_to_csv):
+    #files = [os.path.join(small_tif_dir, f) for f in os.listdir(small_tif_dir)]
+    #fnames = [f for f in os.listdir(small_tif_dir)]
+    bad_small_tifs = pd.read_csv(path_to_csv)
+    bad_small_list = set(bad_small_tifs['bad_label'].tolist())
+
+
+    bad_big_tif_list = set()
+    for fname in bad_small_list:
+        big_tif_name = fname.split('.')[0]
+        big_tif_name = '_'.join(big_tif_name.split('_')[1:])
+        big_tif_name = big_tif_name + '.tif'
+        bad_big_tif_list.add(big_tif_name)
+    return bad_big_tif_list
+
+
 
 
 def main():
