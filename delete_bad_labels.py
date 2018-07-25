@@ -252,25 +252,26 @@ def main():
     # read tif
     #small_tif_dir = '/home/ubuntu/anyan/harvey_data/bad_labels_small'
     
-    #geojson_file = '../just_buildings_w_uid.geojson'
-    geojson_file = '../added_non_damaged.geojson'
+    geojson_file = '../just_buildings_w_uid_cleaned.geojson'
+    #geojson_file = '../added_non_damaged.geojson'
 
-
-    #coords, chips, classes, uids  = get_labels_w_uid(geojson_file)
-    #bad_big_tif_list = parse_tif_names(small_tif_dir)
-    #print('len of bad big tifs: ', len(bad_big_tif_list))
+    '''
+    bad_small_label_path = '../second_inspection_small_tiff.csv'
+    coords, chips, classes, uids  = get_labels_w_uid(geojson_file)
+    bad_big_tif_list = parse_tif_names_from_csv(bad_small_label_path)
+    print('len of bad big tifs: ', len(bad_big_tif_list))
     #print(bad_big_tif_list)
     # draw bbox with uid on big tiffs, save as png
-    #save_path = '/home/ubuntu/anyan/harvey_data/bad_labels_big'
-    #chip_path = '/home/ubuntu/anyan/harvey_data/filtered_converted_image_buildings'
-    #draw_bbox_on_tiff(bad_big_tif_list, chip_path, coords, chips, classes, uids, save_path)
-    #print('len of bad big tifs: ', len(bad_big_tif_list))
-
+    save_path = '/home/ubuntu/anyan/harvey_data/bad_labels_big_second'
+    chip_path = '/home/ubuntu/anyan/harvey_data/filtered_converted_image_buildings'
+    draw_bbox_on_tiff(bad_big_tif_list, chip_path, coords, chips, classes, uids, save_path)
+    print('len of bad big tifs: ', len(bad_big_tif_list))
+    '''
     # RUN THIS TO DELETE UIDS FROM GEOJSON
     # read bad labels from file
-    bad_label_path = '../bad_labels.csv'
+    bad_label_path = '../second_inspection_big_tiff.csv'
     bad_label_df = pd.read_csv(bad_label_path)
-    bad_label_list = set(bad_label_df['bad_label'].tolist())
+    bad_label_list = set(bad_label_df['bad_labels'].tolist())
     
    
 
