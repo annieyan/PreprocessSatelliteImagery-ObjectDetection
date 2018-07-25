@@ -29,7 +29,7 @@ import functools
 from itertools import chain, combinations
 from skimage.filters.rank import median
 from skimage.morphology import disk
-
+from PIL import Image, ImageFont, ImageDraw, ImageEnhance
 
 """
 Image augmentation utilities to be used for processing the dataset.  Importantly, these utilities modify
@@ -47,17 +47,15 @@ Image augmentation utilities to be used for processing the dataset.  Importantly
 # 5. change brightness
 # 6. change aspect ratio / Gaussian noises / jitter
 # for each image, apply all possible combinations of 6 augmentation methods. So in total, there will be 63 variations. 
- 
-
-
 '''
 Expand one training image into multiple ones through augmentation
-By default, this will generate 120 images with corresponding boxes and classes
+The augmentation is agressive in that it uses all possible combinations of 
+a list of augmentation methods.
 Args:
         img: the image to be chipped in array format
         boxes: an (N,4) array of bounding box coordinates for that image
         classes: an (N,1) array of classes for each bounding box
-        pivot: center for flipping, usually the center of the image
+        class_id: the class to be augmented
 Output:
         An image array of shape (M,W,H,C), where M is the number of chips,
         W and H are the dimensions of the image, and C is the number of color
@@ -65,7 +63,7 @@ Output:
 '''
 # https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
 # https://stackoverflow.com/questions/16739290/composing-functions-in-python 
-def expand_aug(img, boxes, classes, class_id):
+def expand_aug_full(img, boxes, classes, class_id):
     func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'median_blur', 'zoomin']
     
     all_subset = all_subsets(func_list)
@@ -107,6 +105,117 @@ def expand_aug(img, boxes, classes, class_id):
         k = k+1
 
     return images.astype(np.uint8),total_boxes,total_classes
+
+
+
+'''
+Expand one training image into multiple ones (default 15) through augmentation
+The augmentation uses random combinations of 
+a list of augmentation methods.
+Args:
+        img: the image to be chipped in array format
+        boxes: an (N,4) array of bounding box coordinates for that image
+        classes: an (N,1) array of classes for each bounding box
+        class_id: the class to be augmented
+        num_aug: how many images to be generated 
+Output:
+        An image array of shape (M,W,H,C), where M is the number of chips,
+        W and H are the dimensions of the image, and C is the number of color
+        channels.  Also returns boxes and classes dictionaries for each corresponding chip
+'''
+# https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
+# https://stackoverflow.com/questions/16739290/composing-functions-in-python 
+def expand_aug_random(img, boxes, classes, class_id, num_aug = 15):
+    func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'shift_image_formatted', 'rotate_image_and_boxes_formatted']  # 8
+    
+    random_list = random_subsets(func_list, num_aug)
+    #debug
+    print('random functions to use: ', random_list)
+    #print('locals, ', locals())
+    # number of augmentation = # of all combinations
+    # all_subset contains empty set, so -1
+    #num_aug = len(list(all_subset)) -1
+    # debug
+    print('one image is augmented into: ', num_aug)
+    # number of different choices of augmentation done to one image
+    w,h, _ = img.shape
+    images = np.zeros((num_aug,w,h,3))
+    total_boxes = {}
+    total_classes = {}
+
+    #newimg =  np.copy(img)
+    #newboxes = np.copy(boxes)
+    #newclasses = np.copy(classes)
+
+    k = 0   # k = [0, num_augI
+    #new_fun_list = list()  # choices of combinations of with fewer than 3 functions
+    '''
+    for subset in  all_subsets(func_list):
+        len_sub = len(subset)
+        if len_sub == 0:
+            continue
+        if len_sub > 3:
+            continue
+        new_fun_list.append(subset)
+
+   
+        # generate random 15 numbers from 0 to len(new_func_list)
+        
+    random_list = new_fun_list[np.random.randint(0,len(new_fun_list))]
+    '''
+    for func_comb in random_list:
+        len_comb = len(func_comb)
+        newimg =  np.copy(img)
+        newboxes = np.copy(boxes)
+        newclasses = np.copy(classes)
+        for idx in range(len_comb):
+            if func_comb[idx] == 'zoomin':
+                newimg, newboxes, newclasses = globals()[func_comb[idx]](newimg, newboxes, newclasses, class_id)
+            else:
+                newimg, newboxes, newclasses = globals()[func_comb[idx]](newimg, newboxes, newclasses)
+        images[k] = newimg
+        total_boxes[k] = newboxes
+        total_classes[k] = newclasses
+       # debug
+        print("processing round: ", k)
+        k = k+1
+
+    return images.astype(np.uint8),total_boxes,total_classes
+
+
+
+def random_subsets(lst, num_aug):
+    #func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'gaussian_blur_formatted', 'shift_image_formatted', 'rotate_image_and_boxes_formatted']  # 8
+
+    #all_subset = all_subsets(lst)
+    #debug
+    #print('locals, ', locals())
+    # number of augmentation = # of all combinations
+    # all_subset contains empty set, so -1
+    #num_aug = len(list(all_subset)) -1
+    # debug
+    #print('one image is augmented into: ', num_aug)
+    # number of different choices of augmentation done to one image
+    new_fun_list = list()  # choices of combinations of with fewer than 3 functions
+    for subset in  all_subsets(lst):
+        len_sub = len(subset)
+        if len_sub == 0:
+            continue
+        if len_sub > 3:
+            continue
+        new_fun_list.append(subset)
+    # debug
+    # manually added "gaussian blur"
+    new_fun_list.append(('gaussian_blur_formatted',))
+    new_fun_list.append(('gaussian_blur_formatted', 'horizontal_flip'))
+    new_fun_list.append(('gaussian_blur_formatted', 'vertical_flip'))
+    new_fun_list.append(('gaussian_blur_formatted', 'shift_image_formatted'))
+    new_fun_list.append(('gaussian_blur_formatted', 'rotate_image_and_boxes_formatted'))
+
+        # generate random 15 numbers from 0 to len(new_func_list)
+    new_fun_arr = np.array(new_fun_list)
+    random_list = new_fun_arr[random.sample(range(0,len(new_fun_list)), num_aug)]
+    return list(random_list)
 
 
 
@@ -352,6 +461,168 @@ def median_blur(img, boxes, classes):
 
 
 
+# reload rotate_image_and_boxes function to fit in chaining of 
+# a series of augmentation functions
+def rotate_image_and_boxes_formatted(img, boxes, classes):
+    """
+    Rotates an image and corresponding bounding boxes.  Bounding box rotations are kept axis-aligned,
+        so multiples of non 90-degrees changes the area of the bounding box.
+    Args:
+        img: the image to be rotated in array format
+        deg: an integer representing degree of rotation
+        pivot: the axis of rotation. By default should be the center of an image, but this can be changed.
+        boxes: an (N,4) array of boxes for the image
+    Output:
+        Returns the rotated image array along with correspondingly rotated bounding boxes
+    """
+
+ #   if deg < 0:
+  #      deg = 360-deg
+  #  deg = int(deg)
+        
+   # angle = 360-deg
+    
+   # randomly generate degree 
+    deg = np.random.randint(-10,10)
+    angle = 360 - deg
+    pivot = np.array([int(img.shape[0]/2),int(img.shape[1]/2)])
+
+
+
+    padX = [img.shape[0] - pivot[0], pivot[0]]
+    padY = [img.shape[1] - pivot[1], pivot[1]]
+    imgP = np.pad(img, [padY, padX, [0,0]], 'constant').astype(np.uint8)
+    #scipy ndimage rotate takes ~.7 seconds
+    #imgR = ndimage.rotate(imgP, angle, reshape=False)
+    #PIL rotate uses ~.01 seconds
+    imgR = Image.fromarray(imgP).rotate(angle)
+    imgR = np.array(imgR)
+    
+    theta = deg * (np.pi/180)
+    R = np.array([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]])
+    #  [(cos(theta), -sin(theta))] DOT [xmin, xmax] = [xmin*cos(theta) - ymin*sin(theta), xmax*cos(theta) - ymax*sin(theta)]
+    #  [sin(theta), cos(theta)]        [ymin, ymax]   [xmin*sin(theta) + ymin*cos(theta), xmax*cos(theta) + ymax*cos(theta)]
+
+    newboxes = []
+    # debug
+    new_classes = []
+    for i in range(len(boxes)):
+        box = boxes[i]
+        xmin, ymin, xmax, ymax = box
+        #The 'x' values are not centered by the x-center (shape[0]/2)
+        #but rather the y-center (shape[1]/2)
+        
+        xmin -= pivot[1]
+        xmax -= pivot[1]
+        ymin -= pivot[0]
+        ymax -= pivot[0]
+
+        bfull = np.array([ [xmin,xmin,xmax,xmax] , [ymin,ymax,ymin,ymax]])
+        c = np.dot(R,bfull) 
+        c[0] += pivot[1]
+        c[0] = np.clip(c[0],0,img.shape[1])
+        c[1] += pivot[0]
+        c[1] = np.clip(c[1],0,img.shape[0])
+        
+        if np.all(c[1] == img.shape[0]) or np.all(c[1] == 0):
+            c[0] = [0,0,0,0]
+        if np.all(c[0] == img.shape[1]) or np.all(c[0] == 0):
+            c[1] = [0,0,0,0]
+
+        newbox = np.array([np.min(c[0]),np.min(c[1]),np.max(c[0]),np.max(c[1])]).astype(np.int64)
+
+        if not (np.all(c[1] == 0) and np.all(c[0] == 0)):
+            newboxes.append(newbox)
+            new_classes.append(classes[i])
+    
+    return imgR[padY[0] : -padY[1], padX[0] : -padX[1]], newboxes, new_classes
+
+
+
+# debug
+# reload shift image function to be ready for chaining
+# note: bboxes may change due to the shift
+# therefore, classes were modified accordingly
+def shift_image_formatted(image,bbox, classes):
+    """
+    Shift an image by a random amount on the x and y axis drawn from discrete  
+        uniform distribution with parameter min(shape/10)
+    Args:
+        image: the image to be shifted in array format
+        bbox: an (N,4) array of boxes for the image
+    Output:
+        The shifted image and corresponding boxes
+    """
+    shape = image.shape[:2]
+    maxdelta = min(shape)/10
+    dx,dy = np.random.randint(-maxdelta,maxdelta,size=(2))
+    newimg = np.zeros(image.shape,dtype=np.uint8)
+    
+    nb = []
+    new_classes = []
+    bbox_count = len(bbox)
+    # debug
+    #i = 0 # index of box in bbox
+    for i in range(len(bbox)):
+        box  = bbox[i]
+        xmin,xmax = np.clip((box[0]+dy,box[2]+dy),0,shape[1])
+        ymin,ymax = np.clip((box[1]+dx,box[3]+dx),0,shape[0])
+
+        #we only add the box if they are not all 0
+        if not(xmin==0 and xmax ==0 and ymin==0 and ymax ==0):
+            nb.append([xmin,ymin,xmax,ymax])
+            new_classes.append(classes[i])
+
+    newimg[max(dx,0):min(image.shape[0],image.shape[0]+dx),
+           max(dy,0):min(image.shape[1],image.shape[1]+dy)] = \
+    image[max(-dx,0):min(image.shape[0],image.shape[0]-dx),
+          max(-dy,0):min(image.shape[1],image.shape[1]-dy)]
+    
+    threshold = 30
+    w = newimg.shape[0]
+    h = newimg.shape[1]
+    # debug
+    # remove bboxes that only have less than 20 pixels in w/h left in the image
+    # only loop through ones that have 0 or wn/hn in the 4 coordinates
+    rows_to_delete = list()
+    nb = np.array(nb)
+    for m in range(nb.shape[0]):
+        if(np.any([nb[m] == 0]) or np.any([nb[m] == w ]) or np.any([nb[m] == h])):
+         # see whether the width of bbox is less than 10 pixels?
+            bbox_w = nb[m][2] - nb[m][0]
+            bbox_h = nb[m][3] - nb[m][1]
+            if bbox_w < threshold or bbox_h < threshold:
+                rows_to_delete.append(m)
+
+    # discard this bbox
+
+    nb = np.delete(nb, rows_to_delete, axis=0)
+    new_classes = np.delete(new_classes, rows_to_delete, axis=0)
+
+
+
+
+    return newimg, nb, new_classes
+
+
+# reloaded gaussian blue
+def gaussian_blur_formatted(img, bboxes, classes):
+    """
+    Use a gaussian filter to blur an image
+    Args:
+        img: image to be augmented in array format
+        max_sigma: the maximum variance for gaussian blurring
+    Output:
+        Augmented image
+    """
+    max_sigma=1
+    new_img = img.clip(0, 255)
+    return filters.gaussian(new_img,np.random.random()*max_sigma,multichannel=True)*255, bboxes,classes
+
+
+
+
+
 
 def rotate_image_and_boxes(img, deg, pivot, boxes):
     """
@@ -485,6 +756,47 @@ def gaussian_blur(img, max_sigma=1):
         Augmented image
     """
     return filters.gaussian(img,np.random.random()*max_sigma,multichannel=True)*255
+
+
+# added 
+# draw bboxes with bbox uid
+
+def draw_bboxes_withindex(img,boxes, uids):
+    """
+    A helper function to draw bounding box rectangles on images
+    Args:
+        img: image to be drawn on in array format
+        boxes: An (N,4) array of bounding boxes
+    Output:
+        Image with drawn bounding boxes
+    """
+    source = Image.fromarray(img)
+    draw = ImageDraw.Draw(source)
+    w2,h2 = (img.shape[0],img.shape[1])
+    
+    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSerif.ttf', 40)
+    #font = ImageFont.truetype('arial.ttf', 24)
+
+
+    idx = 0
+
+    for b in boxes:
+        xmin,ymin,xmax,ymax = b
+        
+        for j in range(3):
+            draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="red")
+        draw.text((xmin-70, ymin-20), str(uids[idx]), font = font, fill = "orange")
+        idx +=1
+    return source
+
+
+
+
+
+
+
+
+
 
 def draw_bboxes(img,boxes):
     """

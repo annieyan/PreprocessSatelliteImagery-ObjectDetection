@@ -87,7 +87,7 @@ def detect_clouds(img,  boxes, classes):
         if ymax > w:
             print('ymax > w')
             ymax= h
-        print(xmin, ymin, xmax, ymax)
+        #print(xmin, ymin, xmax, ymax)
         # clip bbox areas
         #cropped_img = img.crop((xmin, ymin, xmax, ymax))
         cropped_img = img[int(ymin):int(ymax), int(xmin):int(xmax)]  # note the order of w/h
@@ -96,9 +96,9 @@ def detect_clouds(img,  boxes, classes):
         array_img =  np.array(cropped_img)
         mean_img = np.mean(array_img)
         
-        print('mean_img', mean_img, i)
+        #print('mean_img', mean_img, i)
         var_img = np.std(array_img)
-        print('var_img',var_img, i)
+        #print('var_img',var_img, i)
         #if var_img < var_threshold and (cropped_img> 150).all() and (cropped_img< 255).all():
         if var_img < var_threshold and mean_img > mean_threshold_min:
             print('bounding box i has cloud', i)
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # 33: railway vehicle,  42: Sailboat
     #classes_to_augment = [15, 40]
     #class_to_aug = [2, 3, 4]
-    class_to_aug = set([])
+    class_to_aug = set([1])
     num_aug_per_class = {}  # class_id: # of augmentation generated
     for class_id in class_to_aug:
         num_aug_per_class[class_id] = 0
@@ -328,7 +328,7 @@ if __name__ == "__main__":
                     ind_chips +=1
                     
                     # debug
-                    # store the images with bboxes for inspection
+                    # store the training and validation images with bboxes for inspection
                     if SAVE_IMAGES:
                                     # debug: changed save dir
                         aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect/img_%s_%s.png'%(name,str(idx)))
@@ -364,7 +364,7 @@ if __name__ == "__main__":
                           #       skip_augmentation.add(idx)
                             MINOR_CLASS_FLAG = True
                          #   print('trying to call expand_aug for chip: ', idx)
-                            im_aug,boxes_aug,classes_aug= aug.expand_aug(image, box[idx], classes_final[idx], class_id)  # marine time vessels
+                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, box[idx], classes_final[idx], class_id)  # marine time vessels
                             #debug
                             print('augmentig chip: ', idx)
                             num_aug = 0
@@ -384,10 +384,10 @@ if __name__ == "__main__":
                                     num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
                          #           num_aug_this_class=num_aug_this_class + 1
                                     # debug
-                                    if aug_idx%5 == 0 and SAVE_IMAGES:
+                                    if aug_idx%1 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                         aug_image = (aug_image).astype(np.uint8)
-                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
+                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
                             # debug
                             print('augmenting class: ', class_id)
                             print('number of augmentation: ',num_aug)
@@ -437,21 +437,22 @@ if __name__ == "__main__":
                                 tf_example = tfr.to_tf_example(newimg,nb,new_classes)
                                 #tf_example = tfr.to_tf_example(newimg,nb,classes_final[idx])
 
-                                #Don't count augmented chips for chip indices
+                                #DonI't count augmented chips for chip indices
                                 # changed
                                 # removed data augmentation for test data
-                                #if idx < split_ind:
-                                 #   test_writer.write(tf_example.SerializeToString())
-                                  #  test_chips += 1
-                                #else:
-                                train_writer.write(tf_example.SerializeToString())
-                                train_chips+=1
+                                if idx < split_ind:
+                                  #  test_writer.write(tf_example.SerializeToString())
+                                   # test_chips += 1
+                                    continue
+                                else:
+                                    train_writer.write(tf_example.SerializeToString())
+                                    train_chips+=1
                             # debug:
                 	    # save image + bounding boxes for debug
                             #else:
-                                if idx%100 ==0 and SAVE_IMAGES:
-                                    # debug: changed save dir
-                                    aug.draw_bboxes(newimg,nb).save('./harvey_augmented/img_aug_%s_%s_%s.png'%(name,extra,it[0]))
+                                    if idx%100 ==0 and SAVE_IMAGES:
+                                        # debug: changed save dir
+                                        aug.draw_bboxes(newimg,nb).save('./harvey_augmented/img_aug_%s_%s_%s.png'%(name,extra,it[0]))
         if res_ind == 0:
             max_chips_per_res = int(ind_chips * 1.5)
             logging.info("Max chips per resolution: %s " % max_chips_per_res)
