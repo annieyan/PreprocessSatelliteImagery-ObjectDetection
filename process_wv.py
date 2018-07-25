@@ -71,7 +71,7 @@ def detect_blackblock(img):
 def detect_clouds(img,  boxes, classes):
     mean_threshold_min = 160
     w, h, _ = img.shape
-    print('w,h', w, h)
+    #print('w,h', w, h)
     var_threshold = 18
     rows_to_delete = list()
     for i in range(boxes.shape[0]):
@@ -384,7 +384,7 @@ if __name__ == "__main__":
                                     num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
                          #           num_aug_this_class=num_aug_this_class + 1
                                     # debug
-                                    if aug_idx%1 == 0 and SAVE_IMAGES:
+                                    if aug_idx%10 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                         aug_image = (aug_image).astype(np.uint8)
                                         aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
