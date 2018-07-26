@@ -217,8 +217,11 @@ if __name__ == "__main__":
     #sure all future resolutions have less than 1.5times that number of images to prevent chip size imbalance.
     #res = [(500,500),(400,400),(300,300),(200,200)]
     #res = [(300,300)]
-    res = [(512,512)]
+    #res = [(512,512)]
     
+    res = [(256,256)]
+
+
     AUGMENT = args.augment
     # debug
     #SAVE_IMAGES = False
@@ -233,7 +236,10 @@ if __name__ == "__main__":
     train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
     test_writer = tf.python_io.TFRecordWriter("harvey_test_%s.record" % args.suffix)
 
-    coords,chips,classes = wv.get_labels(args.json_filepath)
+    #coords,chips,classes = wv.get_labels(args.json_filepath)
+    coords,chips,classes,uids = wv.get_labels_w_uid(args.json_filepath)
+
+
     # debug
     #print('number of chips from geojson', len(chips))
     #print('number of classes from geojson', len(classes))
@@ -372,11 +378,15 @@ if __name__ == "__main__":
                         # print('checking whether this chip contain class: ', class_id)
                         # this chip contains minor classes
                         #if np.any(classes_final[idx][:]== class_id):
-                        if class_id in set(classes_final[idx]) and idx > split_ind:
+                        #if class_id in set(classes_final[idx]) and idx > split_ind:
+                        if class_id in set(new_classes) and idx > split_ind:
                           #       skip_augmentation.add(idx)
                             MINOR_CLASS_FLAG = True
                          #   print('trying to call expand_aug for chip: ', idx)
-                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, box[idx], classes_final[idx], class_id)  # marine time vessels
+                            #im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, box[idx], classes_final[idx], class_id)  
+                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id)  
+
+
                             #debug
                             print('augmentig chip: ', idx)
                             num_aug = 0
@@ -399,7 +409,7 @@ if __name__ == "__main__":
                                     if aug_idx%1 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                         aug_image = (aug_image).astype(np.uint8)
-                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random_inspect/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
+                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random_256/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
                             # debug
                             print('augmenting class: ', class_id)
                             print('number of augmentation: ',num_aug)

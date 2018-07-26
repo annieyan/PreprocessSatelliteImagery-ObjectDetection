@@ -370,8 +370,8 @@ def zoomin(img, boxes, classes, class_id):
     newimg = img[startx: endx, starty: endy]
     image_rescaled = resize(newimg, (w, h), preserve_range=True)
     # debug
-    print('startx, endx', startx, endx)    
-    print('starty, endy', starty, endy)
+    #print('startx, endx', startx, endx)    
+    #print('starty, endy', starty, endy)
     # scale bounding boxes inside the cropped area
     # see https://github.com/DIUx-xView/data_utilities/blob/master/wv_util.py
     newboxes = []
