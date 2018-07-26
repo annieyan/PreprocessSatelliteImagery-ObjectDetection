@@ -321,18 +321,30 @@ if __name__ == "__main__":
                     if idx < split_ind:
                         test_writer.write(tf_example.SerializeToString())
                         test_chips+=1
+                        if SAVE_IMAGES:
+                                    # debug: changed save dir
+                            aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect_test/img_%s_%s.png'%(name,str(idx)))
+
+
                     else:
                         train_writer.write(tf_example.SerializeToString())
                         train_chips += 1
+                        if SAVE_IMAGES:
+                                    # debug: changed save dir
+                            aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect_train/img_%s_%s.png'%(name,str(idx)))
+
+
+
      
                     ind_chips +=1
                     
                     # debug
                     # store the training and validation images with bboxes for inspection
+                    '''
                     if SAVE_IMAGES:
                                     # debug: changed save dir
                         aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect/img_%s_%s.png'%(name,str(idx)))
-
+                    '''
                 
 
 
@@ -384,10 +396,10 @@ if __name__ == "__main__":
                                     num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
                          #           num_aug_this_class=num_aug_this_class + 1
                                     # debug
-                                    if aug_idx%10 == 0 and SAVE_IMAGES:
+                                    if aug_idx%1 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                         aug_image = (aug_image).astype(np.uint8)
-                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
+                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random_inspect/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
                             # debug
                             print('augmenting class: ', class_id)
                             print('number of augmentation: ',num_aug)
