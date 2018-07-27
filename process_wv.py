@@ -112,6 +112,7 @@ def detect_clouds(img,  boxes, classes):
         # return boxes and classes with clouds removed
         new_coords = np.delete(boxes, rows_to_delete, axis=0)
         new_classes = np.delete(classes, rows_to_delete, axis=0)
+        #new_uids = np.delete(uids, rows_to_delete, axis=0)
         return img, new_coords, new_classes
         
         
@@ -250,11 +251,8 @@ if __name__ == "__main__":
 
     # debug
     sample_percent = args.sample_percent
-    # a list of classes to be augment: for example,
-    # 12: Small Aircraft,   15:Helicopter, 40:Maritime Vessel
-    # 33: railway vehicle,  42: Sailboat
-    #classes_to_augment = [15, 40]
-    #class_to_aug = [2, 3, 4]
+    # a list of classes to be augment. Set to set to be empty if no augmentation
+    # is wanted 
     class_to_aug = set([1])
     num_aug_per_class = {}  # class_id: # of augmentation generated
     for class_id in class_to_aug:

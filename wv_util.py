@@ -210,6 +210,95 @@ def boxes_from_coords(coords):
         nc[ind] = [x1,y1,x2,y2]
     return nc
 
+
+
+
+# added this function to chip with uids retained
+# this function to discard bboxes that cut off to have less than 30 pixels in w/h 
+def chip_image_with_uid(img,coords,classes,uids, shape=(300,300)):
+    """
+    Chip an image and get relative coordinates and classes.  Bounding boxes that pass into
+        multiple chips are clipped: each portion that is in a chip is labeled. For example,
+        half a building will be labeled if it is cut off in a chip. If there are no boxes,
+        the boxes array will be [[0,0,0,0]] and classes [0].
+        Note: This chip_image method is only tested on xView data-- there are some image manipulations that can mess up different images.
+    Args:
+        img: the image to be chipped in array format
+        coords: an (N,4) array of bounding box coordinates for that image
+        classes: an (N,1) array of classes for each bounding box
+        shape: an (W,H) tuple indicating width and height of chips
+    Output:
+        An image array of shape (M,W,H,C), where M is the number of chips,
+        W and H are the dimensions of the image, and C is the number of color
+        channels.  Also returns boxes and classes dictionaries for each corresponding chip.
+    """
+    height,width,_ = img.shape
+    wn,hn = shape
+    
+    w_num,h_num = (int(width/wn),int(height/hn))
+    images = np.zeros((w_num*h_num,hn,wn,3))
+    total_boxes = {}
+    total_classes = {}
+    total_uids = {}
+    
+    # debug
+    threshold = 30  # threshold of # of pixels to discard bbox
+    
+    k = 0
+    for i in range(w_num):
+        for j in range(h_num):
+            x = np.logical_or( np.logical_and((coords[:,0]<((i+1)*wn)),(coords[:,0]>(i*wn))),
+                               np.logical_and((coords[:,2]<((i+1)*wn)),(coords[:,2]>(i*wn))))
+            out = coords[x]
+            y = np.logical_or( np.logical_and((out[:,1]<((j+1)*hn)),(out[:,1]>(j*hn))),
+                               np.logical_and((out[:,3]<((j+1)*hn)),(out[:,3]>(j*hn))))
+            outn = out[y]
+            out = np.transpose(np.vstack((np.clip(outn[:,0]-(wn*i),0,wn),
+                                          np.clip(outn[:,1]-(hn*j),0,hn),
+                                          np.clip(outn[:,2]-(wn*i),0,wn),
+                                          np.clip(outn[:,3]-(hn*j),0,hn))))
+            
+            box_classes = classes[x][y]
+            box_uids = uids[x][y]
+            
+            # debug
+            # remove bboxes that only have less than 20 pixels in w/h left in the image
+            # only loop through ones that have 0 or wn/hn in the 4 coordinates
+            rows_to_delete = list()
+            for m in range(out.shape[0]):
+                if(np.any([out[m] == 0]) or np.any([out[m] == wn]) or np.any([out[m] == hn])):
+                    # see whether the width of bbox is less than 10 pixels?
+                    bbox_w = out[m][2] - out[m][0]
+                    bbox_h = out[m][3] - out[m][1]
+                    if bbox_w < threshold or bbox_h < threshold:
+                        rows_to_delete.append(m)
+                        
+            # discard this bbox
+        
+            out = np.delete(out, rows_to_delete, axis=0)
+            box_classes = np.delete(box_classes, rows_to_delete, axis=0)
+            box_uids = np.delete(box_uids, rows_to_delete, axis=0)
+            
+            
+            if out.shape[0] != 0:
+                total_boxes[k] = out
+                total_classes[k] = box_classes
+                total_uids[k] = box_uids
+            else:
+                total_boxes[k] = np.array([[0,0,0,0]])
+                total_classes[k] = np.array([0])
+                total_uids[k] = np.array([0])
+            
+            chip = img[hn*j:hn*(j+1),wn*i:wn*(i+1),:3]
+            images[k]=chip
+            
+            k = k + 1
+    
+    return images.astype(np.uint8),total_boxes,total_classes, total_uids
+
+
+
+
 # # changed this function to discard bboxes that cut off to have less than 20 pixels in w/h 
 def chip_image(img,coords,classes,shape=(300,300)):
     """

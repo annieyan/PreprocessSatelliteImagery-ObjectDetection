@@ -173,14 +173,58 @@ def expand_aug_random(img, boxes, classes, class_id, num_aug = 15):
                 newimg, newboxes, newclasses = globals()[func_comb[idx]](newimg, newboxes, newclasses, class_id)
             else:
                 newimg, newboxes, newclasses = globals()[func_comb[idx]](newimg, newboxes, newclasses)
-        images[k] = newimg
-        total_boxes[k] = newboxes
-        total_classes[k] = newclasses
+        
+        newimg, new_bboxes, new_classes = check_bbox_validity(newimg, newboxes, newclasses)
+        # check whether there are any bboxes on the image, if not, discard
+        if len(new_bboxes) != 0:
+      
+            images[k] = newimg
+            total_boxes[k] = new_bboxes
+            total_classes[k] = new_classes
        # debug
-        print("processing round: ", k)
-        k = k+1
+            print("processing round: ", k)
+            k = k+1
+
+    # only retain k images
+    final_aug_num = len(total_boxes)
+    print('final augmentation number: ',final_aug_num )
+    images = images[0:final_aug_num]
 
     return images.astype(np.uint8),total_boxes,total_classes
+
+
+# check and delete invalid bboxes for an image
+# check for all 0s, NaNs, and out of bounds 
+def check_bbox_validity(img, bboxes, classes):
+    w = img.shape[0]
+    h = img.shape[1]
+    bbox_len = len(bboxes)
+    new_bboxes = []
+    new_classes = []
+    # for each bbox in that image, check and delete if not valid
+    for i in range(bbox_len): 
+        xmin, ymin, xmax, ymax = bboxes[i]
+        # check for all 0
+        if np.all(bboxes[i]==0):
+            print('BBOX ALL ZEROS')
+            continue
+        # check for any NaNs
+        if np.isnan(bboxes[i]).any():
+            print('BBOXE HAS NANs')
+            continue
+        # check for out of bounds
+        if xmin < 0 or ymin < 0 or xmax > w and ymax > h:
+            print('BBOX out of bounds')
+            continue
+        # check for bbox len and width
+        if (xmax - xmin) <= 0 or (ymax - ymin) <= 0:
+            print('BBOX invalid height or width')
+            continue
+        newbox = np.array([xmin, ymin, xmax, ymax]).astype(np.int64)
+        new_bboxes.append(newbox) 
+        new_classes.append(classes[i])
+    return img, new_bboxes, new_classes
+
 
 
 
