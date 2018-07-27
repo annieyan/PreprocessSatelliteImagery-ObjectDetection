@@ -120,6 +120,12 @@ if __name__ == "__main__":
     images = chip_image(arr,chip_size)
     print(images.shape)
 
+
+    # debug
+    # TODO: need to remove black chips here
+    
+
+
     #generate detections
     boxes, scores, classes = generate_detections(args.checkpoint,images)
 
@@ -128,7 +134,10 @@ if __name__ == "__main__":
     cwn,chn = (chip_size)
     wn,hn = (int(width/cwn),int(height/chn))
 
-    num_preds = 250
+
+    # changed to 100 in harvey situtation
+    #num_preds = 250
+    num_preds = 100
     bfull = boxes[:wn*hn].reshape((wn,hn,num_preds,4))
     b2 = np.zeros(bfull.shape)
     b2[:,:,:,0] = bfull[:,:,:,1]

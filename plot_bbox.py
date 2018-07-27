@@ -1,5 +1,5 @@
 '''
-Take 2048 * 2048 chips, overlay bounding boxes on them,
+Take 2048 * 2048 chips, overlay bounding boxes with uids on them,
 and output png of the same size
 '''
 
@@ -71,7 +71,7 @@ def get_labels(fname):
 
 
 
-def draw_bbox_on_tiff(chip_path, coords, chips, classes, save_path):
+def draw_bbox_on_tiff(chip_path, coords, chips, classes,uids, save_path):
     #Load an image
     #path = '/home/ubuntu/anyan/harvey_data/converted_sample_tiff/'
     
@@ -118,7 +118,8 @@ def draw_bbox_on_tiff(chip_path, coords, chips, classes, save_path):
     #         #We can chip the image into 500x500 chips
     #         c_img, c_box, c_cls = wv.chip_image(img = arr, coords= coords, classes=classes, shape=(500,500))
     #         print("Num Chips: %d" % c_img.shape[0])
-        labelled = aug.draw_bboxes(arr,coords_chip[classes_chip ==1])
+        uids_chip = uids[chips == chip_name].astype(np.int64)
+        labelled = aug.draw_bboxes_withindex(arr,coords_chip, uids_chip)
         print(chip_name)
 #             plt.figure(figsize=(15,15))
 #             plt.axis('off')
@@ -162,17 +163,18 @@ def main():
 
 
     #geojson_file = '../bounding_box_referenced_2.geojson'
-    geojson_file = '../first_run_training_data.geojson'
-    coords, chips, classes = get_labels(geojson_file)
+    geojson_file = '../harvey_test_second.geojson'
+    coords, chips, classes, uids = wv.get_labels_w_uid(geojson_file)
     print('number of chips is :', chips.shape)
     test_tif = '20170902_10400100324DAE00_3210111_jpeg_compressed_09_05.tif'
     if test_tif in chips.tolist():
         print('test tif exists!!!!!')
 
     #print('chips, ', chips.tolist())
-    path = '/home/ubuntu/anyan/harvey_data/converted_image_tiles_aws/'
-    save_path =  '/home/ubuntu/anyan/harvey_data/bbox_debug_png2/'
-    draw_bbox_on_tiff(path, coords, chips, classes, save_path)
+    path = '/home/ubuntu/anyan/harvey_data/harvey_test_second/'
+    save_path =  '/home/ubuntu/anyan/harvey_data/inspect_black_in_test/'
+    #aug.draw_bboxes_withindex(arr,coords_chip, uids_chip)
+    draw_bbox_on_tiff(path, coords, chips, classes,uids, save_path)
 
 if __name__ == '__main__':
     main()

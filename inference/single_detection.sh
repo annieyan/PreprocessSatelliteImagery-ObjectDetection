@@ -1,0 +1,1 @@
+python create_detections.py -c /home/ubuntu/anyan/models/research/models/harvey_ssd_inceptionv2_second/frozen_inference_graph_29774.pb -cs 512 /home/ubuntu/anyan/harvey_data/harvey_vis_result_toydata/20170831_105001000B95E200_3002321_jpeg_compressed_02_03.tif

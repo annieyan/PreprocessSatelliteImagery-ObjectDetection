@@ -818,7 +818,7 @@ def draw_bboxes_withindex(img,boxes, uids):
     draw = ImageDraw.Draw(source)
     w2,h2 = (img.shape[0],img.shape[1])
     
-    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSerif.ttf', 40)
+    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSerif.ttf', 15)
     #font = ImageFont.truetype('arial.ttf', 24)
 
 
@@ -829,7 +829,7 @@ def draw_bboxes_withindex(img,boxes, uids):
         
         for j in range(3):
             draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="red")
-        draw.text((xmin-70, ymin-20), str(uids[idx]), font = font, fill = "orange")
+        draw.text((xmin+30, ymin+30), str(int(uids[idx])), font = font, fill = "orange")
         idx +=1
     return source
 
