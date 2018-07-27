@@ -319,10 +319,13 @@ if __name__ == "__main__":
 
                 #Check to make sure that the TF_Example has valid bounding boxes.  
                 #If there are no valid bounding boxes, then don't save the image to the TFRecord.
-                float_list_value = tf_example.features.feature['image/object/bbox/xmin'].float_list.value
-                
-                if (ind_chips < max_chips_per_res and np.array(float_list_value).any()):
-                    tot_box+=np.array(float_list_value).shape[0]
+                float_list_value_xmin = tf_example.features.feature['image/object/bbox/xmin'].float_list.value
+                float_list_value_ymin = tf_example.features.feature['image/object/bbox/ymin'].float_list.value
+                float_list_value_xmax = tf_example.features.feature['image/object/bbox/xmax'].float_list.value
+                float_list_value_ymax = tf_example.features.feature['image/object/bbox/ymax'].float_list.value
+
+                if (ind_chips < max_chips_per_res and np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
+                    tot_box+=np.array(float_list_value_xmin).shape[0]
                     
                     if idx < split_ind:
                         test_writer.write(tf_example.SerializeToString())
@@ -394,11 +397,15 @@ if __name__ == "__main__":
                                 tf_example_aug = tfr.to_tf_example(aug_image, boxes_aug[aug_idx],classes_aug[aug_idx])            
                                 #Check to make sure that the TF_Example has valid bounding boxes.  
                 #If there are no valid bounding boxes, then don't save the image to the TFRecord.
-                                float_list_value = tf_example_aug.features.feature['image/object/bbox/xmin'].float_list.value
+                                float_list_value_xmin = tf_example_aug.features.feature['image/object/bbox/xmin'].float_list.value
+                                float_list_value_xmax = tf_example_aug.features.feature['image/object/bbox/xmax'].float_list.value
+                                float_list_value_ymin = tf_example_aug.features.feature['image/object/bbox/ymin'].float_list.value
+                                float_list_value_ymax = tf_example_aug.features.feature['image/object/bbox/ymax'].float_list.value
+
                                 # debug
                                 #num_aug = 0
-                                if (np.array(float_list_value).any()):
-                                    tot_box+=np.array(float_list_value).shape[0]
+                                if (np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
+                                    tot_box+=np.array(float_list_value_xmin).shape[0]
                     
                                     train_writer.write(tf_example_aug.SerializeToString())
                                     num_aug = num_aug + 1
@@ -406,7 +413,7 @@ if __name__ == "__main__":
                                     num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
                          #           num_aug_this_class=num_aug_this_class + 1
                                     # debug
-                                    if aug_idx%1 == 0 and SAVE_IMAGES:
+                                    if aug_idx%10 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                         aug_image = (aug_image).astype(np.uint8)
                                         aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./expand_aug_random_256/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))

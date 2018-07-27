@@ -73,7 +73,7 @@ def expand_aug_full(img, boxes, classes, class_id):
     # all_subset contains empty set, so -1
     num_aug = len(list(all_subset)) -1
     # debug
-    print('one image is augmented into: ', num_aug)
+    #print('one image is augmented into: ', num_aug)
     # number of different choices of augmentation done to one image
     w,h, _ = img.shape
     images = np.zeros((num_aug,w,h,3))
