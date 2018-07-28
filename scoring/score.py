@@ -27,7 +27,7 @@ from matching import Matching
 import csv
 from rectangle import Rectangle
 import time
-
+#debug
 """
   Scoring code to calculate per-class precision and mean average precision.
 
@@ -51,6 +51,8 @@ import time
     'metrics.txt' contains the remaining metrics in per-line format (metric/class_num: score_float)
 
 """
+
+
 
 def get_labels(fname):
   """
@@ -84,6 +86,72 @@ def get_labels(fname):
           chips[i] = 'None'
 
   return coords, chips, classes
+
+
+
+
+
+
+# changed to deal with harvey data
+# shifting bboxes by 15
+def get_labels_harvey(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+    # debug
+    x_off = 15
+    y_off = 15
+    right_shift = 5  # how much shift to the right 
+    add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try:
+                b_id = data['features'][i]['properties']['IMAGE_ID']
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+
+                ymin = val[3]
+                ymax = val[1]
+                val[1] =  ymin
+                val[3] = ymax
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['TYPE_ID']
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    coords = np.add(coords, add_np)
+
+    return coords, chips, classes
+
+
+
+
+
+
 
 def convert_to_rectangle_list(coordinates):
   """
