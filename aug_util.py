@@ -804,7 +804,7 @@ def gaussian_blur(img, max_sigma=1):
 
 # added 
 # draw bboxes with bbox uid
-
+# The text size is suitable for small images such as 256 * 256
 def draw_bboxes_withindex(img,boxes, uids):
     """
     A helper function to draw bounding box rectangles on images
@@ -836,6 +836,37 @@ def draw_bboxes_withindex(img,boxes, uids):
 
 
 
+# draw bboxes with multiple classes with uids
+# red for damaged buildings, and green for non-damaged buildings.
+def draw_bboxes_withindex_multiclass(img,boxes,classes, uids):
+    """
+    A helper function to draw bounding box rectangles on images
+    Args:
+        img: image to be drawn on in array format
+        boxes: An (N,4) array of bounding boxes
+    Output:
+        Image with drawn bounding boxes
+    """
+    source = Image.fromarray(img)
+    draw = ImageDraw.Draw(source)
+    w2,h2 = (img.shape[0],img.shape[1])
+    
+    font = ImageFont.truetype('/usr/share/fonts/truetype/freefont/FreeSerif.ttf', 15)
+    #font = ImageFont.truetype('arial.ttf', 24)
+    idx = 0
+
+    for b in boxes:
+        xmin,ymin,xmax,ymax = b
+        if classes[idx] == 1: 
+        
+            for j in range(3):
+                draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="red")
+        else:
+            for j in range(3):
+                draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="green")
+        draw.text((xmin+30, ymin+30), str(uids[idx]), font = font, fill = "orange")
+        idx +=1
+    return source
 
 
 

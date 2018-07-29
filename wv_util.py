@@ -132,7 +132,8 @@ def get_labels(fname):
 
 
 # debug
-# modified to buffer the bounding boxes by 15 pixels
+# this is for Tomnod + Oak Ridge building footprint data
+# modified to buffer the bounding boxes by 15 pixels, and shift to the right
 # return uids of bboxes as well 
 def get_labels_w_uid(fname):
     """
@@ -189,6 +190,70 @@ def get_labels_w_uid(fname):
     coords = np.add(coords, add_np)
 
     return coords, chips, classes, uids
+
+
+
+
+
+
+
+# debug
+# This is for Tomnox + Microsoft building footprint data 
+# this is for geojson with 2 classes: damaged and non-damaged
+# TODO: add offset
+def get_labels_w_uid_nondamaged(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+      # debug
+#     x_off = 15
+#     y_off = 15
+#     right_shift = 5  # how much shift to the right 
+#     add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+    # debug
+    uids = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try: 
+                b_id = data['features'][i]['properties']['Joined lay']
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+                
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['type']
+                # debug
+                uids[i] = int(data['features'][i]['properties']['uniqueid'])
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    #coords = np.add(coords, add_np)
+    
+    return coords, chips, classes, uids
+
 
 
 
