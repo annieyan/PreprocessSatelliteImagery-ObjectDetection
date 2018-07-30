@@ -229,7 +229,7 @@ if __name__ == "__main__":
     #res = [(300,300)]
     #res = [(512,512)]
     
-    res = [(256,256)]
+    res = [(512, 512)]
 
 
     AUGMENT = args.augment
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     test_writer = tf.python_io.TFRecordWriter("harvey_test_%s.record" % args.suffix)
 
     #coords,chips,classes = wv.get_labels(args.json_filepath)
-    coords,chips,classes,uids = wv.get_labels_w_uid(args.json_filepath)
+    coords,chips,classes,uids = wv.get_labels_w_uid_nondamaged(args.json_filepath)
 
 
     # debug
@@ -313,13 +313,15 @@ if __name__ == "__main__":
                     num_black +=1
                     continue
                 # remove clouds
+                '''
                 image, new_coords, new_classes, new_uids= detect_clouds(image,box[idx],classes_final[idx], uids_chip[idx])                
                 if len(new_coords)!= len(box[idx]):
                     num_cloud_rm += 1
-
+                '''
+               
                 # debug: changed image,box[idx],classes_final[idx] to newly constructed img and box
-                #tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
-                tf_example = tfr.to_tf_example(image, new_coords, new_classes)
+                tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
+               # tf_example = tfr.to_tf_example(image, new_coords, new_classes)
                 
 
 
@@ -359,7 +361,7 @@ if __name__ == "__main__":
                     
                     if SAVE_IMAGES:
                                     # debug: changed save dir
-                        aug.draw_bboxes_withindex(image, new_coords, new_uids).save('./harvey_img_inspect_test_256/img_%s_%s.png'%(name,str(idx)))
+                        aug.draw_bboxes_withindex_multiclass(image, box[idx],classes_final[idx], uids_chip[idx]).save('../ms_no_clean_train_512/img_%s_%s.png'%(name,str(idx)))
                     
                 
 

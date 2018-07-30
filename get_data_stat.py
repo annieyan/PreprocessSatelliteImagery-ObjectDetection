@@ -83,6 +83,73 @@ def get_bbox_count(fname):
     return coords, chips, classes, uids
 
 
+# for tomnod + MS data, 2 classes
+def get_bbox_count_multiclass(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+      # debug
+    x_off = 15
+    y_off = 15
+    right_shift = 5 # how much shift to the right 
+    add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+    # debug
+    uids = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try: 
+                b_id = data['features'][i]['properties']['Joined lay']
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+                
+#                 ymin = val[3]
+#                 ymax = val[1]
+#                 val[1] =  ymin
+#                 val[3] = ymax
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['type']
+                # debug
+                uids[i] = int(data['features'][i]['properties']['uniqueid'])
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    #coords = np.add(coords, add_np)
+    chip_unique = len(np.unique(chips))
+    print('The total number of bboxes for training + test: ', len(data['features']))
+    print('The total number of bboxes for damaged buildings  training + test: ', classes[classes == 1].shape[0])
+    print('The total number of bboxes for non-damaged buildings  training + test: ', classes[classes == 2].shape[0])
+
+    print('The total number of 2048 chips for training + test: ', chip_unique)
+    return coords, chips, classes, uids
+
+
+
+
+
 
 def parse_args():
     """Parse command line arguments passed to script invocation."""
@@ -102,7 +169,7 @@ def main():
     #test_dir = args.test_dir
     geojson_path = args.src_geojson
     #geojson_path = '../just_buildings_w_uid_second_round.geojson'
-    get_bbox_count(geojson_path)
+    get_bbox_count_multiclass(geojson_path)
 
 
 

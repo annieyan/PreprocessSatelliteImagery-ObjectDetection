@@ -211,10 +211,10 @@ def get_labels_w_uid_nondamaged(fname):
             coordinates, file-names, and classes for each ground truth.
     """
       # debug
-#     x_off = 15
-#     y_off = 15
-#     right_shift = 5  # how much shift to the right 
-#     add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    x_off = 15
+    y_off = 15
+    right_shift = 5  # how much shift to the right 
+    add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
     with open(fname) as f:
         data = json.load(f)
 
@@ -250,7 +250,7 @@ def get_labels_w_uid_nondamaged(fname):
     # debug
     # added offsets to each coordinates
     # need to check the validity of bbox maybe
-    #coords = np.add(coords, add_np)
+    coords = np.add(coords, add_np)
     
     return coords, chips, classes, uids
 

@@ -864,7 +864,7 @@ def draw_bboxes_withindex_multiclass(img,boxes,classes, uids):
         else:
             for j in range(3):
                 draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="green")
-        draw.text((xmin+30, ymin+30), str(uids[idx]), font = font, fill = "orange")
+        draw.text((xmin+30, ymin+30), str(int(uids[idx])), font = font, fill = "orange")
         idx +=1
     return source
 

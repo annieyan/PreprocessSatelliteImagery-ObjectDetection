@@ -21,6 +21,9 @@ import glob
 import shutil
 import os
 
+
+
+# This is for single class Tomnod + Oak Ridge building foot print data (no offsets)
 def get_labels(fname):
     """
     Gets label data from a geojson label file
@@ -68,6 +71,68 @@ def get_labels(fname):
             print('warning: chip is none')
 
     return coords, chips, classes
+
+
+# This is for 2 classes data: damaged + non-damaged buildings
+# Suitable for Tomnod + MS building footprints (no offsets)
+def get_labels_w_uid_nondamaged(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+      # debug
+#     x_off = 15
+#     y_off = 15
+#     right_shift = 5  # how much shift to the right 
+#     add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+    # debug
+    uids = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try: 
+                b_id = data['features'][i]['properties']['Joined lay']
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+                
+#                 ymin = val[3]
+#                 ymax = val[1]
+#                 val[1] =  ymin
+#                 val[3] = ymax
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['type']
+                # debug
+                uids[i] = int(data['features'][i]['properties']['uniqueid'])
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    #coords = np.add(coords, add_np)
+    
+    return coords, chips, classes, uids
+
+
 
 
 
@@ -119,7 +184,7 @@ def draw_bbox_on_tiff(chip_path, coords, chips, classes,uids, save_path):
     #         c_img, c_box, c_cls = wv.chip_image(img = arr, coords= coords, classes=classes, shape=(500,500))
     #         print("Num Chips: %d" % c_img.shape[0])
         uids_chip = uids[chips == chip_name].astype(np.int64)
-        labelled = aug.draw_bboxes_withindex(arr,coords_chip, uids_chip)
+        labelled = aug.draw_bboxes_withindex_multiclass(arr,coords_chip,classes_chip, uids_chip)
         print(chip_name)
 #             plt.figure(figsize=(15,15))
 #             plt.axis('off')
@@ -163,16 +228,20 @@ def main():
 
 
     #geojson_file = '../bounding_box_referenced_2.geojson'
-    geojson_file = '../harvey_test_second.geojson'
-    coords, chips, classes, uids = wv.get_labels_w_uid(geojson_file)
+    #geojson_file = '../harvey_test_second.geojson'
+    geojson_file = '../bboxes_tomnod_2class_v1.geojson'
+    coords, chips, classes, uids = wv.get_labels_w_uid_nondamaged(geojson_file)
     print('number of chips is :', chips.shape)
     test_tif = '20170902_10400100324DAE00_3210111_jpeg_compressed_09_05.tif'
     if test_tif in chips.tolist():
         print('test tif exists!!!!!')
 
     #print('chips, ', chips.tolist())
-    path = '/home/ubuntu/anyan/harvey_data/harvey_test_second/'
-    save_path =  '/home/ubuntu/anyan/harvey_data/inspect_black_in_test/'
+    #path = '/home/ubuntu/anyan/harvey_data/harvey_test_second/'
+    #save_path =  '/home/ubuntu/anyan/harvey_data/inspect_black_in_test/'
+    path = '../harvey_vis_result_toydata/'
+    save_path = '../harvey_vis_result_toydata_bboxes/'
+
     #aug.draw_bboxes_withindex(arr,coords_chip, uids_chip)
     draw_bbox_on_tiff(path, coords, chips, classes,uids, save_path)
 

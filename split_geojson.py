@@ -41,7 +41,42 @@ def get_filenames(abs_dirname):
         i += 1
     return name_list
 
-def geojson_split(geojson_ori, src_dir):
+
+
+
+
+
+# for Tomnod + MS data
+def geojson_split_multiclass(geojson_ori, src_dir, suffix):
+    name_list = set(get_filenames(os.path.abspath(src_dir)))
+    gfN = gpd.read_file(geojson_ori)
+    index_list = []
+    df_len = len(gfN)
+
+    for i in range(0, df_len):
+        print('idx', i)
+        series_tmp = gfN.loc[i]
+        if series_tmp['Joined lay'] in name_list:
+            index_list.append(i)
+    geometries = [xy for xy in list(gfN.iloc[index_list]['geometry'])]
+    crs = {'init': 'epsg:4326'}
+    gf = gpd.GeoDataFrame(gfN.iloc[index_list], crs=crs, geometry=geometries)
+
+# geometries = [shapely.geometry.Point(xy) for xy in zip(df.lng, df.lat)]
+# gf = gpd.GeoDataFrame(gfN.iloc[0],)
+    parent_folder = os.path.abspath(geojson_ori + "/../")
+
+    # get training or test dir name
+    f_base = os.path.basename(src_dir)
+    save_name = f_base + '_'+suffix+ '.geojson'
+    print('saving file: ', save_name)
+    #path = os.path.join(subdir_name, f_base)
+    gf.to_file(parent_folder+'/'+ save_name, driver='GeoJSON')
+
+
+
+# for Tomnod + Oak Ridge building footprint
+def geojson_split(geojson_ori, src_dir, suffix):
     name_list = set(get_filenames(os.path.abspath(src_dir)))
     gfN = gpd.read_file(geojson_ori) 
     index_list = []
@@ -62,7 +97,7 @@ def geojson_split(geojson_ori, src_dir):
     
     # get training or test dir name
     f_base = os.path.basename(src_dir)
-    save_name = f_base + '.geojson'
+    save_name = f_base + '_'+suffix+ '.geojson'
     print('saving file: ', save_name)
     #path = os.path.join(subdir_name, f_base)
     gf.to_file(parent_folder+'/'+ save_name, driver='GeoJSON')
@@ -78,7 +113,8 @@ def parse_args():
     parser.add_argument('train_dir', help='directory containing training files')
     parser.add_argument('test_dir', help='directory containing test files')
     parser.add_argument('src_geojson', help='source geojson')
-
+    parser.add_argument("-s", "--suffix", type=str, default='v1',
+                    help="Output geojson suffix. Default suffix 'v1' will output 'harvey_train_second_v1.geojson'")
     return parser.parse_args()
 
 
@@ -88,13 +124,14 @@ def main():
     train_dir = args.train_dir
     test_dir = args.test_dir
     geojson_ori = args.src_geojson
+    suffix = args.suffix
     '''
     if not os.path.exists(src_dir):
         raise Exception('Directory does not exist ({0}).'.format(src_dir))
     '''
     #get_filenames(os.path.abspath(src_dir))
-    geojson_split(os.path.abspath(geojson_ori),os.path.abspath(train_dir))
-    geojson_split(os.path.abspath(geojson_ori),os.path.abspath(test_dir))
+    geojson_split_multiclass(os.path.abspath(geojson_ori),os.path.abspath(train_dir), suffix)
+    geojson_split_multiclass(os.path.abspath(geojson_ori),os.path.abspath(test_dir),suffix)
     #move_files(os.path.abspath(src_dir))
     #seperate_nfiles(os.path.abspath(src_dir))
 
