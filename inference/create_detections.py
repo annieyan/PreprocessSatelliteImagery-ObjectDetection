@@ -55,7 +55,7 @@ Outputs:
         (default is 250, but other models have differing numbers of predictions)
 
 """
-'''
+
 def chip_image(img, chip_size=(300,300)):
     """
     Segmzent an image into NxWxH chips
@@ -76,19 +76,20 @@ def chip_image(img, chip_size=(300,300)):
     for i in tqdm(range(int(width/wn))):
         for j in range(int(height/hn)):
             
-            chip = img[wn*i:wn*(i+1),hn*j:hn*(j+1),:3]
+        #    chip = img[wn*i:wn*(i+1),hn*j:hn*(j+1),:3]
+            chip = img[hn*j:hn*(j+1), wn*i:wn*(i+1),:3]
             images[k]=chip
             
             k = k + 1
     
     return images.astype(np.uint8)
-'''
+
 
 
 
 
 # # changed this function to discard bboxes that cut off to have less than 20 pixels in w/h 
-def chip_image(img,coords,shape=(300,300)):
+def chip_image_withboxes(img,coords,shape=(300,300)):
     """
     Chip an image and get relative coordinates and classes.  Bounding boxes that pass into
         multiple chips are clipped: each portion that is in a chip is labeled. For example,
@@ -289,12 +290,14 @@ if __name__ == "__main__":
     # write back class = 0, bboxes == [0,0,0,0] to the chips that do not contain building footprints
     #coords,chips,classes = wv.get_labels(args.json_filepath)
     coords,chips= load_building_footprint_nondamaged(args.json_filepath)
-    im,box_chip = chip_image(arr,coords[chips==image_name],chip_size)
-    
+    im,box_chip = chip_image_withboxes(arr,coords[chips==image_name],chip_size)
+    #im = chip_image(arr,chip_size)
 
     # debug
     # TODO: if there are black images in test images. Then need to remove black chips here
     # automatic cloud removal if nessessary
+    
+
     
     boxes = []
     scores = []
@@ -314,10 +317,10 @@ if __name__ == "__main__":
     images.astype(np.uint8)    
     print('number of images without bboxes: ', k)
     print('images shape: ', images.shape)        
-
+    
     i = 0    
-    boxes_pred, scores_pred, classes_pred = generate_detections(args.checkpoint,im)
-    '''
+    boxes_pred, scores_pred, classes_pred = generate_detections(args.checkpoint,images)
+    
     for idx, image in enumerate(im):
         if idx in set(empty_image_idx): 
 
@@ -334,7 +337,7 @@ if __name__ == "__main__":
             scores.append(score_pred)
             classes.append(cls_pred)
             i = i+1
-    '''
+    
     boxes =   np.squeeze(np.array(boxes_pred))
     scores = np.squeeze(np.array(scores_pred))
     classes = np.squeeze(np.array(classes_pred))
@@ -351,7 +354,15 @@ if __name__ == "__main__":
     # changed to 100 in harvey situtation
     #num_preds = 250
     num_preds = 100
-    bfull = boxes[:wn*hn].reshape((wn,hn,num_preds,4))
+    
+    # debug
+    #bfull = boxes[:wn*hn].reshape((wn,hn,num_preds,4))  # original
+    bfull = boxes[:wn*hn].reshape((hn, wn,num_preds,4))
+
+    # debug
+    # commented out original transform, because the way the images
+    # are chipped are changed
+    
     b2 = np.zeros(bfull.shape)
     b2[:,:,:,0] = bfull[:,:,:,1]
     b2[:,:,:,1] = bfull[:,:,:,0]
@@ -359,17 +370,33 @@ if __name__ == "__main__":
     b2[:,:,:,3] = bfull[:,:,:,2]
 
     bfull = b2
+   
+
+
     bfull[:,:,:,0] *= cwn
     bfull[:,:,:,2] *= cwn
     bfull[:,:,:,1] *= chn
     bfull[:,:,:,3] *= chn
-    for i in range(wn):
-        for j in range(hn):
+    # debug
+    #for i in range(wn):
+     #   for j in range(hn):
+    for i in range(hn):
+        for j in range(wn):
+            '''
+            # original
             bfull[i,j,:,0] += j*cwn
             bfull[i,j,:,2] += j*cwn
             
             bfull[i,j,:,1] += i*chn
             bfull[i,j,:,3] += i*chn
+            '''
+
+            
+            bfull[i,j,:,0] += i*cwn
+            bfull[i,j,:,2] += i*cwn
+            
+            bfull[i,j,:,1] += j*chn
+            bfull[i,j,:,3] += j*chn
             
     bfull = bfull.reshape((hn*wn,num_preds,4))
 
@@ -384,7 +411,7 @@ if __name__ == "__main__":
     with open(args.output,'w') as f:
         for i in range(bfull.shape[0]):
             for j in range(bfull[i].shape[0]):
-                #box should be xmin ymin xmax ymax
+                #box should be xmin: ymin xmax ymax
                 box = bfull[i,j]
                 class_prediction = classes[i,j]
                 score_prediction = scores[i,j]
