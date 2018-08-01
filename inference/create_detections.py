@@ -201,9 +201,13 @@ def draw_bboxes(img,boxes,classes):
         c = classes[i]
 
         draw.text((xmin+15,ymin+15), str(c))
+        if c== 1:
+            for j in range(4):
+                draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="red")
+        else:
+            for j in range(4):
+                draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="green")
 
-        for j in range(4):
-            draw.rectangle(((xmin+j, ymin+j), (xmax+j, ymax+j)), outline="red")
     return source
 
 
@@ -285,7 +289,7 @@ if __name__ == "__main__":
     #images = chip_image(arr,chip_size)
     #print(images.shape)
     image_name = args.input.split("/")[-1]
-
+    num_preds = 100
     # TODO: loading building footprints, only make detections with the chips that have bboxes
     # write back class = 0, bboxes == [0,0,0,0] to the chips that do not contain building footprints
     #coords,chips,classes = wv.get_labels(args.json_filepath)
@@ -308,7 +312,7 @@ if __name__ == "__main__":
     empty_image_idx = []
     for idx, image in enumerate(im):
         # skip chips that do not have buildings, avoid feeding them into inference
-        if len(box_chip) == 0 or (len(box_chip) == 1 and np.all(box_chip==0)):
+        if len(box_chip[idx]) == 0 or (len(box_chip[idx]) == 1 and np.all(box_chip[idx]==0)):
             empty_image_idx.append(idx)
             k = k+1
         else:
@@ -321,26 +325,38 @@ if __name__ == "__main__":
     i = 0    
     boxes_pred, scores_pred, classes_pred = generate_detections(args.checkpoint,images)
     
+
+
+    # debug
     for idx, image in enumerate(im):
         if idx in set(empty_image_idx): 
 
-            box = [[0,0,0,0]]
-            score =[[0]]
-            clss = [[0]]
-            boxes.append(box.astype(np.int32))
-            scores.append(score.astype(np.int32))
-            classes.append(clss.astype(np.int32))
+            box =  np.zeros((1, num_preds, 4))
+            score = np.zeros((1, num_preds))
+            clss = np.zeros((1, num_preds))
+            boxes.append(box)
+            scores.append(score)
+            classes.append(clss)
         else:
             #continue
-            box_pred, score_pred, cls_pred = boxes_pred[i], scores_pred[i], classes_pred[i] 
+            box_pred, score_pred, cls_pred = boxes_pred[i], scores_pred[i], classes_pred[i]
+            # debug
+            #print('box_pred', box_pred)
+            #print('cls_pred', cls_pred)
+            print('shape of box_pred', box_pred.shape)
+            print('shape of score_pred', score_pred.shape) 
             boxes.append(box_pred)
             scores.append(score_pred)
             classes.append(cls_pred)
             i = i+1
+    # debug
+    #print('boxes', boxes)
+    print('shape of boxes', len(boxes))
+    print('shape of one of the boxes', boxes[0].shape)
     
-    boxes =   np.squeeze(np.array(boxes_pred))
-    scores = np.squeeze(np.array(scores_pred))
-    classes = np.squeeze(np.array(classes_pred))
+    boxes =   np.squeeze(np.array(boxes))
+    scores = np.squeeze(np.array(scores))
+    classes = np.squeeze(np.array(classes))
 
     #generate detections
     #boxes, scores, classes = generate_detections(args.checkpoint,images)
@@ -353,7 +369,7 @@ if __name__ == "__main__":
 
     # changed to 100 in harvey situtation
     #num_preds = 250
-    num_preds = 100
+#    num_preds = 100
     
     # debug
     #bfull = boxes[:wn*hn].reshape((wn,hn,num_preds,4))  # original
