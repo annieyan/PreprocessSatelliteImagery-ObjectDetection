@@ -412,6 +412,11 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
 
         matching = Matching(gt_rects, rects)
         rects_matched, gt_matched = matching.greedy_match(iou_threshold)
+        # debug
+        print('len(gt_matched): ', len(gt_matched))
+        print('len(rects_matched): ', len(rects_matched))
+        print('rects_matched: ', rects_matched)
+
 
         #we aggregate confidence scores, rectangles, and num_gt across classes 
         #per_file_class_data[i][0] += det_scores[det_cls == i].tolist()
