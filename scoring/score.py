@@ -31,8 +31,8 @@ import time
 
 #debug
 # geospatial
-import data_utilities.aug_util as aug
-import data_utilities.wv_util as wv
+#import data_utilities.aug_util as aug
+#import data_utilities.wv_util as wv
 
 
 """
@@ -58,6 +58,63 @@ import data_utilities.wv_util as wv
     'metrics.txt' contains the remaining metrics in per-line format (metric/class_num: score_float)
 
 """
+# This is for Tomnox + Microsoft building footprint data 
+# this is for geojson with 2 classes: damaged and non-damaged
+# TODO: add offset
+def get_labels_w_uid_nondamaged(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+      # debug
+    x_off = 15
+    y_off = 15
+    right_shift = 5  # how much shift to the right 
+    add_np = np.array([-x_off + right_shift, -y_off, x_off + right_shift, y_off])  # shift to the rihgt
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+    # debug
+    uids = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try:
+                b_id = data['features'][i]['properties']['Joined lay']
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['type']
+                # debug
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    coords = np.add(coords, add_np)
+
+    return coords, chips, classes, uids
+
+
+
 
 
 
@@ -205,6 +262,26 @@ def ap_from_pr(p,r):
 
   return ap
 
+
+# added
+'''
+remove predictions that have class = 0 from the list of predictions of an image
+args:
+    prediction_list: a list of predictions: (xmin ymin xmax ymax class_prediction score_prediction)
+'''
+def remove_invalid_predictions(prediction_list):
+    new_list = list()
+    for pred in prediction_list:
+        if pred[4] == 0:
+            continue
+        new_list.append(pred)
+    return new_list
+
+
+
+
+
+
 def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   """
     Compute metrics on a number of prediction files, given a folder of prediction files
@@ -247,16 +324,23 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   for file in tqdm(os.listdir(path_predictions)):
       fname = file.split(".txt")[0]
       pchips.append(fname)
-
+      # debug
       with open(path_predictions + file,'r') as f:
-        arr = np.array(list(csv.reader(f,delimiter=" ")))
-        if arr.shape[0] == 0:
+ 
+       #arr = np.array(list(csv.reader(f,delimiter=" ")))
+       
+       # maybe not needed
+       predict_list = list(csv.reader(f,delimiter=" "))
+       new_list = remove_invalid_predictions(predict_list)
+       arr = np.array(new_list)
+       if arr.shape[0] == 0:
             #If the file is empty, we fill it in with an array of zeros
             boxes_dict[fname] = np.array([[0,0,0,0,0,0]])
             num_preds += 1
-        else:
+       else:
             arr = arr[:,:6].astype(np.float64)
-            threshold = 0
+            # TODO: adjust the threshold of scores that to be counted as valid predictions
+            threshold = 0.5
             arr = arr[arr[:,5] > threshold]
             stclasses += list(arr[:,4])
             num_preds += arr.shape[0]
@@ -275,20 +359,24 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
 
   # debug
   #gt_coords, gt_chips, gt_classes = get_labels(path_groundtruth)
-  gt_coords, gt_chips, gt_classes, _ =wv.get_labels_w_uid_nondamaged(path_groundtruth)
+  gt_coords, gt_chips, gt_classes, _ =get_labels_w_uid_nondamaged(path_groundtruth)
 
 
   # TODO: add removing bboxes over clouds manually or / test images should not contain any black chips 
 
-
-
-
-
   gt_unique = np.unique(gt_classes.astype(np.int64))
+  #debug
+  print('gt_unique: ', gt_unique)
+  # TODO: need to set this to a proper value
   max_gt_cls = 100
+  # debug
+  # need to remove class 0 from evaluation
+  ignored_classes = [0]
+  gt_unique_ig = np.array([i for i in gt_unique if int(i) not in ignored_classes], dtype = np.int64)
 
 
-  if set(pchips).issubset(set(gt_unique)):
+
+  if set(pchips).issubset(set(gt_unique_ig)):
       raise ValueError('The prediction files {%s} are not in the ground truth.' % str(set(pchips) - (set(gt_unique))))
 
   print("Number of Predictions: %d" % num_preds)
@@ -296,7 +384,7 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
 
 
   per_file_class_data = {}
-  for i in gt_unique:
+  for i in gt_unique_ig:
     per_file_class_data[i] = [[],[]]
 
   num_gt_per_cls =  np.zeros((max_gt_cls))
@@ -334,7 +422,14 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   per_class_p = np.ones(max_gt_cls) * float('nan')
   per_class_r = np.ones(max_gt_cls) * float('nan')
 
-  for i in gt_unique:
+  # debug
+  # need to remove class 0 from evaluation
+  ignored_classes = [0]
+  gt_unique_ig = np.array([i for i in gt_unique if int(i) not in ignored_classes], dtype = np.int64)
+
+
+
+  for i in gt_unique_ig:
     scores = np.array(per_file_class_data[i][0])
     rects_matched = np.array(per_file_class_data[i][1])
 
