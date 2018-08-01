@@ -27,7 +27,14 @@ from matching import Matching
 import csv
 from rectangle import Rectangle
 import time
+
+
 #debug
+# geospatial
+import data_utilities.aug_util as aug
+import data_utilities.wv_util as wv
+
+
 """
   Scoring code to calculate per-class precision and mean average precision.
 
@@ -150,7 +157,7 @@ def get_labels_harvey(fname):
 
 
 
-
+#  def get_labels_w_uid_nondamaged(fname), return return coords, chips, classes, uids
 
 
 def convert_to_rectangle_list(coordinates):
@@ -235,6 +242,8 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   stclasses = []
   num_preds = 0
 
+
+  # pchips: prediction txt
   for file in tqdm(os.listdir(path_predictions)):
       fname = file.split(".txt")[0]
       pchips.append(fname)
@@ -263,7 +272,17 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   pchips = sorted(pchips)
   stclasses = np.unique(stclasses).astype(np.int64)
 
-  gt_coords, gt_chips, gt_classes = get_labels(path_groundtruth)
+
+  # debug
+  #gt_coords, gt_chips, gt_classes = get_labels(path_groundtruth)
+  gt_coords, gt_chips, gt_classes, _ =wv.get_labels_w_uid_nondamaged(path_groundtruth)
+
+
+  # TODO: add removing bboxes over clouds manually or / test images should not contain any black chips 
+
+
+
+
 
   gt_unique = np.unique(gt_classes.astype(np.int64))
   max_gt_cls = 100
@@ -332,10 +351,14 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
       ap = float('nan')
     average_precision_per_class[i] = ap
 
+  # debug
   #metric splits
-  metric_keys = ['map','map/small','map/medium','map/large',
-  'map/common','map/rare']
+  #metric_keys = ['map','map/small','map/medium','map/large',
+  #'map/common','map/rare']
 
+  metric_keys = ['map']
+
+  '''
   splits = {
   'map/small': [17, 18, 19, 20, 21, 23, 24, 26, 27, 28, 32, 41, 60,
                    62, 63, 64, 65, 66, 91],
@@ -348,14 +371,18 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   'map/rare': [11,12,15,29,32,33,36,37,38,40,42,44,45,49,50,
                   51,52,53,54,55,56,57,59,61,62,65,66,74,84,93,94]
   }
-
+  '''
   vals = {}
   vals['map'] = np.nanmean(average_precision_per_class)
   vals['map_score'] = np.nanmean(per_class_p)
   vals['mar_score'] = np.nanmean(per_class_r)
 
+
+  '''
   for i in splits.keys():
     vals[i] = np.nanmean(average_precision_per_class[splits[i]])
+  '''
+
 
   for i in gt_unique:
     vals[int(i)] = average_precision_per_class[int(i)]

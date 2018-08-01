@@ -32,7 +32,7 @@ def get_unique_images(fname):
     for i in tqdm(range(len(data['features']))):
         if data['features'][i]['properties']['bb'] != []:
             try:
-                b_id = data['features'][i]['properties']['IMAGE_ID']
+                b_id = data['features'][i]['properties']['Joined lay']
                 if b_id == '20170902_10400100324DAE00_3210111_jpeg_compressed_09_05.tif':
                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
@@ -46,10 +46,10 @@ def get_unique_images(fname):
                 #print(val)
                 chips[i] = str(b_id)
 
-                classes[i] = data['features'][i]['properties']['TYPE_ID']
+                classes[i] = data['features'][i]['properties']['type']
             except:
                 print('i:', i)
-                print(data['features'][i]['properties']['IMAGE_ID'])
+                print(data['features'][i]['properties']['Joined lay'])
                   #pass
             if val.shape[0] != 4:
                 print("Issues at %d!" % i)
@@ -66,12 +66,12 @@ def get_unique_images(fname):
 
 def main():
 
-    geojson_file = '../just_buildings.geojson'
+    geojson_file = '../harvey_test_second_noblack_ms_noclean.geojson'
     unique_image_set = get_unique_images(geojson_file)
     print('number of chips is :', len(unique_image_set))
 
-    path = '/home/ubuntu/anyan/harvey_data/converted_image_tiles_aws/'
-    save_path =  '/home/ubuntu/anyan/harvey_data/filtered_converted_image_buildings/'
+    path = '/home/ubuntu/anyan/harvey_data/harvey_test_second_noblack/'
+    save_path =  '/home/ubuntu/anyan/harvey_data/harvey_test_bigtiff_v3/'
 
 
     files = [os.path.join(path, f) for f in os.listdir(path)]
