@@ -340,7 +340,7 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
        else:
             arr = arr[:,:6].astype(np.float64)
             # TODO: adjust the threshold of scores that to be counted as valid predictions
-            threshold = 0.5
+            threshold = 0.4
             arr = arr[arr[:,5] > threshold]
             stclasses += list(arr[:,4])
             num_preds += arr.shape[0]
@@ -367,8 +367,7 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   gt_unique = np.unique(gt_classes.astype(np.int64))
   #debug
   print('gt_unique: ', gt_unique)
-  # TODO: need to set this to a proper value
-  max_gt_cls = 100
+  max_gt_cls = 100   # max number of classes 
   # debug
   # need to remove class 0 from evaluation
   ignored_classes = [0]
@@ -442,8 +441,11 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
       sorted_indices = np.argsort(scores)[::-1]
       tp_sum = np.cumsum(rects_matched[sorted_indices])
       fp_sum = np.cumsum(np.logical_not(rects_matched[sorted_indices]))
+      # calculated using confidence scores of the bboxes that have confidence score > 0.5 (or some other threshold) 
       precision = tp_sum / (tp_sum + fp_sum + np.spacing(1))
       recall = tp_sum / num_gt_per_cls[i]
+      # debug
+      # per_class_precision: @IOU >= 0.5, # of correctly identified bboxes / all predicted boxes 
       per_class_p[i] = np.sum(rects_matched) / len(rects_matched)
       per_class_r[i] = np.sum(rects_matched) / num_gt_per_cls[i]
       ap = ap_from_pr(precision,recall)
@@ -490,8 +492,9 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   vals['f1'] =  2 /  ( (1 / (np.spacing(1) + vals['map_score']) ) 
     + ( 1 / ( np.spacing(1) + vals['mar_score'])) )
 
-  print("mAP: %f | mAP score: %f | mAR: %f | F1: %f" % 
-    (vals['map'],vals['map_score'],vals['mar_score'],vals['f1']))
+  #print("mAP: %f | mAP score: %f | mAR: %f | F1: %f" % 
+  print("mAP: %f | mean precision: %f | mean recall: %f | F1: %f" % 
+     (vals['map'],vals['map_score'],vals['mar_score'],vals['f1']))
 
   with open(path_output + '/score.txt','w') as f:
       f.write(str("%.8f" % vals['map']))
