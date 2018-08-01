@@ -1,0 +1,11 @@
+item {
+  id: 1
+  name: 'Flooded / Damaged Building'
+}
+item {
+  id: 2
+  name: 'Non-damaged Building'
+}
+
+
+

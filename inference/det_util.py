@@ -50,9 +50,62 @@ def generate_detections(checkpoint,images):
                 boxes.append(box)
                 scores.append(score)
                 classes.append(clss)
-                
-    boxes =   np.squeeze(np.array(boxes))
-    scores = np.squeeze(np.array(scores))
-    classes = np.squeeze(np.array(classes))
+    # debug
+    # changed made here to match create_detections.py            
+    #boxes =   np.squeeze(np.array(boxes))
+    #scores = np.squeeze(np.array(scores))
+    #classes = np.squeeze(np.array(classes))
 
     return boxes,scores,classes
+
+
+
+
+
+# debug
+# added to generate detection for a single image
+def generate_detection_for_single_image(checkpoint,image):
+    print("Creating Graph...")
+    detection_graph = tf.Graph()
+    with detection_graph.as_default():
+        od_graph_def = tf.GraphDef()
+        with tf.gfile.GFile(checkpoint, 'rb') as fid:
+            serialized_graph = fid.read()
+            od_graph_def.ParseFromString(serialized_graph)
+            tf.import_graph_def(od_graph_def, name='')
+
+    #boxes = []
+    #scores = []
+    #classes = []
+    #k = 0
+    with detection_graph.as_default():
+        with tf.Session(graph=detection_graph) as sess:
+     #       for image_np in tqdm(images):
+             image_np_expanded = np.expand_dims(image, axis=0)
+             image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
+             box = detection_graph.get_tensor_by_name('detection_boxes:0')
+             score = detection_graph.get_tensor_by_name('detection_scores:0')
+             clss = detection_graph.get_tensor_by_name('detection_classes:0')
+             num_detections = detection_graph.get_tensor_by_name('num_detections:0')
+                # Actual detection.
+             (box, score, clss, num_detections) = sess.run(
+                        [box, score, clss, num_detections],
+                        feed_dict={image_tensor: image_np_expanded})
+
+             #   boxes.append(box)
+             #   scores.append(score)
+             #   classes.append(clss)
+
+    #boxes =   np.squeeze(np.array(boxes))
+    #scores = np.squeeze(np.array(scores))
+    #classes = np.squeeze(np.array(classes))
+
+    return box,score,clss
+
+
+
+
+
+
+
+
