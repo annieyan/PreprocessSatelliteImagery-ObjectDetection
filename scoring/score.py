@@ -339,8 +339,9 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
             num_preds += 1
        else:
             arr = arr[:,:6].astype(np.float64)
-            # TODO: adjust the threshold of scores that to be counted as valid predictions
-            threshold = 0.4
+            # TODO: may adjust the threshold of scores that to be counted as valid predictions
+            # default = 0
+            threshold = 0.001
             arr = arr[arr[:,5] > threshold]
             stclasses += list(arr[:,4])
             num_preds += arr.shape[0]
