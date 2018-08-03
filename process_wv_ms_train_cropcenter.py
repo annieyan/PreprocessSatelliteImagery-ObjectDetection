@@ -451,7 +451,7 @@ if __name__ == "__main__":
                     # start to augment the rest, only do SHIFT
                     if AUGMENT and prob < it[0] and MINOR_CLASS_FLAG == False:
                         
-                        for extra in range(3):
+                        for extra in range(1):
                             center = np.array([int(image.shape[0]/2),int(image.shape[1]/2)])
                             deg = np.random.randint(-10,10)
                             #deg = np.random.normal()*30
