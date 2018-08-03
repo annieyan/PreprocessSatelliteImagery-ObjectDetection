@@ -20,7 +20,14 @@ limitations under the License.
 
 '''
 This script is modified from process_wv.py to plot bounding
-boxes with uids on chipped tiles (i.e., 256 x 256) for manual inspection 
+boxes with uids on chipped tiles (i.e., 256 x 256 / 512 x 512) for manual inspection 
+
+bboxes over clouds are removed automatically by naive scripts. These 
+removed uids will be recorded and written to a csv/txt file
+
+The rest of the bboxes will be rendered to png files, which will be 
+handed to manual inspection
+
 '''
 
 
@@ -81,8 +88,11 @@ def detect_clouds(img,  boxes, classes, uids):
     mean_threshold_min = 160
     w, h, _ = img.shape
     #print('w,h', w, h)
-    var_threshold = 18
+
+    # TODO: try the threshold, process_wv.py used 18 
+    var_threshold = 25
     rows_to_delete = list()
+    deleted_uids = list()
     for i in range(boxes.shape[0]):
         xmin, ymin, xmax, ymax = boxes[i]
 #         ymin = 0
@@ -113,16 +123,17 @@ def detect_clouds(img,  boxes, classes, uids):
             print('bounding box i has cloud', i)
             # need to delete this bbox
             rows_to_delete.append(i)
+            deleted_uids.append(uids[i])
     print('rows_to_delete',rows_to_delete)
             
     if len(rows_to_delete) == 0:
-        return img,  boxes, classes, uids
+        return img,  boxes, classes, uids, []
     else:
         # return boxes and classes with clouds removed
         new_coords = np.delete(boxes, rows_to_delete, axis=0)
         new_classes = np.delete(classes, rows_to_delete, axis=0)
         new_uids = np.delete(uids, rows_to_delete, axis=0)
-        return img, new_coords, new_classes, new_uids
+        return img, new_coords, new_classes, new_uids, deleted_uids
         
         
     
@@ -241,10 +252,14 @@ if __name__ == "__main__":
     train_chips = 0
     test_chips = 0
 
+
+    # debug
+    deleted_uids_bycloud = set()
+
     #Parameters
     max_chips_per_res = 100000
-    train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
-    test_writer = tf.python_io.TFRecordWriter("harvey_test_%s.record" % args.suffix)
+    train_writer = tf.python_io.TFRecordWriter("harvey_delete1_%s.record" % args.suffix)
+    test_writer = tf.python_io.TFRecordWriter("harvey_delete2_%s.record" % args.suffix)
 
     #coords,chips,classes = wv.get_labels(args.json_filepath)
     coords,chips,classes,uids = wv.get_labels_w_uid_nondamaged(args.json_filepath)
@@ -313,15 +328,15 @@ if __name__ == "__main__":
                     num_black +=1
                     continue
                 # remove clouds
-                '''
-                image, new_coords, new_classes, new_uids= detect_clouds(image,box[idx],classes_final[idx], uids_chip[idx])                
+                
+                image, new_coords, new_classes, new_uids, deleted_uids = detect_clouds(image,box[idx],classes_final[idx], uids_chip[idx])                
                 if len(new_coords)!= len(box[idx]):
                     num_cloud_rm += 1
-                '''
+                deleted_uids_bycloud = deleted_uids_bycloud.union(set(deleted_uids))
                
                 # debug: changed image,box[idx],classes_final[idx] to newly constructed img and box
-                tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
-               # tf_example = tfr.to_tf_example(image, new_coords, new_classes)
+               # tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
+                tf_example = tfr.to_tf_example(image, new_coords, new_classes)
                 
 
 
@@ -359,9 +374,9 @@ if __name__ == "__main__":
                     # debug
                     # store the training and validation images with bboxes for inspection
                     
-                    if SAVE_IMAGES:
+                    #if SAVE_IMAGES:
                                     # debug: changed save dir
-                        aug.draw_bboxes_withindex_multiclass(image, box[idx],classes_final[idx], uids_chip[idx]).save('../ms_no_clean_train_512/img_%s_%s.png'%(name,str(idx)))
+                     #   aug.draw_bboxes_withindex_multiclass(image, new_coords, new_classes, new_uids).save('../harvey_manual_inspect_test_512/img_%s_%s.png'%(name,str(idx)))
                     
                 
 
@@ -510,3 +525,13 @@ if __name__ == "__main__":
     logging.info("saved: %d test chips" % test_chips)
     train_writer.close()
     test_writer.close() 
+    print('number of bboxes over clouds deleted: ', len(deleted_uids_bycloud))
+    # write deleted_uids_bycloud  to file
+    cloudfname = 'automatic_deleted_bbox_onclouds_' + args.suffix + '.txt'
+    with open(cloudfname, 'w') as f:
+        for uid in deleted_uids_bycloud:
+            f.write('%s\n'% int(uid))
+    f.close()
+                
+    
+

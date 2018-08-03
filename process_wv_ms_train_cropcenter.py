@@ -82,7 +82,7 @@ def detect_clouds(img,  boxes, classes):
     mean_threshold_min = 160
     w, h, _ = img.shape
     #print('w,h', w, h)
-    var_threshold = 18
+    var_threshold = 25
     rows_to_delete = list()
     boxes = np.array(boxes)
     for i in range(boxes.shape[0]):
