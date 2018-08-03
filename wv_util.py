@@ -19,7 +19,7 @@ from PIL import Image
 import numpy as np
 import json
 from tqdm import tqdm
-
+import aug_util as aug
 """
 xView processing helper functions for use in data processing.
 """
@@ -274,6 +274,118 @@ def boxes_from_coords(coords):
         y1,y2 = coords[ind,:,1].min(),coords[ind,:,1].max()
         nc[ind] = [x1,y1,x2,y2]
     return nc
+
+
+
+# given a 2048 tif and its labels, chip it to small images that centered with each
+# bounding boxes
+# resolution
+def crop_from_center(img,coords_chip,classes_chip, uids_chip, resolution = (200,200)):
+    w = img.shape[0]
+    h = img.shape[1]
+    crop_w, crop_h = resolution
+    threshold = 20  # threshold of # of pixels to discard bbox
+    boxes = np.array(coords_chip) 
+    print('number of bboxes: ', boxes.shape[0])
+    images = np.zeros((coords_chip.shape[0],crop_w,crop_h,3))
+    total_boxes = {}
+    total_classes = {}
+    k = 0
+    for i in range(boxes.shape[0]):
+        xmin, ymin, xmax, ymax = boxes[i]
+#         bbox_x_center = (xmin + xmax)/2
+#         bbox_y_center = (ymin + ymax) /2
+        bbox_y_center = (xmin + xmax)/2
+        bbox_x_center = (ymin + ymax) /2
+        # force the crop to be square and contain the chosen bbox
+        if bbox_x_center < 1/2 * crop_w:
+             # start from leftmost
+            startx = 0
+            endx = int(startx + crop_w)
+            # should consider the case: if endx < xmax
+        elif bbox_x_center > w - 1/2 * crop_w:
+            endx = w
+            startx = int(w - crop_w)
+           
+        else:
+            endx = int(bbox_x_center + 1/2 * crop_w)
+            #startx = int(w - crop_w)
+            startx = int(bbox_x_center - 1/2 * crop_w)
+        if bbox_y_center < 1/2 * crop_h:
+            starty = 0
+            endy = int(starty + crop_h)
+        elif bbox_y_center > int(h - 1/2 *crop_h):
+            endy = h
+            starty = int(endy - crop_h)
+        else:
+            endy = int(bbox_y_center + 1/2 * crop_h)
+            starty = int(bbox_y_center - 1/2 * crop_h)
+        newimg = img[startx: endx, starty: endy]
+        newboxes = []
+        newclasses = []
+       
+        #boxes = np.array(coords_chip)  # change to np array, otherwise, boxes[:,0] cannot access list
+        x = np.logical_or( np.logical_and( (boxes[:,0]<endy),  (boxes[:,0]>starty)),
+                                   np.logical_and((boxes[:,2]<endy),  (boxes[:,2]>starty)))
+        out = boxes[x]
+        y = np.logical_or( np.logical_and(  (out[:,1]<endx),  (out[:,1]>startx)),
+                                   np.logical_and((out[:,3]<endx),  (out[:,3]>startx)))
+        outn = out[y]
+        out = np.transpose(np.vstack((np.clip(outn[:,0]-starty,0,crop_w),
+                                              np.clip(outn[:,1]-startx,0, crop_h),
+                                              np.clip(outn[:,2]-starty,0,crop_w),
+                                              np.clip(outn[:,3]-startx,0, crop_h))))
+        box_classes = classes_chip[x][y]
+        # remove bboxes that only have less than 20 pixels in w/h left in the image
+        # only loop through ones that have 0 or wn/hn in the 4 coordinates
+        rows_to_delete = list()
+        for m in range(out.shape[0]):
+            if(np.any([out[m] == 0]) or np.any([out[m] == crop_w]) or np.any([out[m] == crop_h])):
+             # see whether the width of bbox is less than 10 pixels?
+                bbox_w = out[m][2] - out[m][0]
+                bbox_h = out[m][3] - out[m][1]
+                if bbox_w < threshold or bbox_h < threshold:
+                    rows_to_delete.append(m)
+
+        # discard this bbox
+
+        out = np.delete(out, rows_to_delete, axis=0)
+        box_classes = np.delete(box_classes, rows_to_delete, axis=0)
+
+        if out.shape[0] != 0:
+            newboxes = out
+            newclasses = box_classes
+        else:
+            newboxes= np.array([[0,0,0,0]])
+            newclasses = np.array([0])
+            # check whether there are any bboxes on the image, if not, discard
+        newimg, new_bboxes, new_classes = aug.check_bbox_validity(newimg, newboxes, newclasses)
+        if len(new_bboxes) != 0:
+
+            images[k] = newimg
+            total_boxes[k] = new_bboxes
+            total_classes[k] = new_classes
+ 
+            print("processing round: ", k)
+            k = k+1
+
+    # only retain k images
+    final_aug_num = len(total_boxes)
+    print('final number: ',final_aug_num )
+    images = images[0:final_aug_num]
+
+    return images.astype(np.uint8),total_boxes,total_classes
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -20,7 +20,7 @@ limitations under the License.
 '''
 This is for creating a multiclass training data for harvey hurricane
 In the case of Digital Globe data, there are two classes: damaged buildings / non-damaged buildings
-This script produces TF record for validation data
+This script produces TF record for validation data or test data
 '''
 
 
@@ -128,7 +128,7 @@ def detect_clouds(img,  boxes, classes):
 
 
 
-def get_images_from_filename_array(coords,chips,classes,folder_names,res=(250,250)):
+def get_images_from_filename_array(coords,chips,classes,folder_names,res=(200,200)):
     """
     Gathers and chips all images within a given folder at a given resolution.
 
@@ -346,7 +346,7 @@ if __name__ == "__main__":
                             #debug
                             # draw only DAMAGED buildings
                             #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_val_2class_noclean/img_%s_%s.png'%(name,str(idx)))
-                        aug.draw_bboxes(image, new_coords).save('./harvey_ms_inspect_val_2class_noclean_v2/img_%s_%s.png'%(name,str(idx)))
+                        aug.draw_bboxes(image, new_coords).save('./harvey_ms_inspect_test_2class_noclean_v2/img_%s_%s.png'%(name,str(idx)))
 
                     #else:
                      #   train_writer.write(tf_example.SerializeToString())

@@ -421,6 +421,8 @@ def zoomin(img, boxes, classes, class_id):
     newboxes = []
     newclasses = []
     # crop bboxes and scale them 
+    # TODO: (boxes[:,0]<endy) should all turned into (boxes[:,0]<endx)???
+
     boxes = np.array(boxes)  # change to np array, otherwise, boxes[:,0] cannot access list
     x = np.logical_or( np.logical_and( (boxes[:,0]<endy),  (boxes[:,0]>starty)),
                                np.logical_and((boxes[:,2]<endy),  (boxes[:,2]>starty)))
@@ -428,6 +430,8 @@ def zoomin(img, boxes, classes, class_id):
     y = np.logical_or( np.logical_and(  (out[:,1]<endx),  (out[:,1]>startx)),
                                np.logical_and((out[:,3]<endx),  (out[:,3]>startx)))
     outn = out[y]    
+    # TODO: out = np.transpose(np.vstack((np.clip(outn[:,0]-starty,0,scaled_y),
+    # should be changed to np.clip(outn[:,0]-startx,0,scaled_x ???
     out = np.transpose(np.vstack((np.clip(outn[:,0]-starty,0,scaled_y),
                                           np.clip(outn[:,1]-startx,0, scaled_x),
                                           np.clip(outn[:,2]-starty,0,scaled_y),
@@ -451,11 +455,7 @@ def zoomin(img, boxes, classes, class_id):
         
     out = np.delete(out, rows_to_delete, axis=0)
     box_classes = np.delete(box_classes, rows_to_delete, axis=0)
-            
-
-
-
-    
+           
     if out.shape[0] != 0:
         newboxes = out
         newclasses = box_classes
@@ -598,7 +598,10 @@ def shift_image_formatted(image,bbox, classes):
         The shifted image and corresponding boxes
     """
     shape = image.shape[:2]
-    maxdelta = min(shape)/10
+    # debug
+    # do more aggressive shift
+    #maxdelta = min(shape)/10
+    maxdelta = min(shape)/5
     dx,dy = np.random.randint(-maxdelta,maxdelta,size=(2))
     newimg = np.zeros(image.shape,dtype=np.uint8)
     
@@ -745,7 +748,9 @@ def shift_image(image,bbox):
         The shifted image and corresponding boxes
     """
     shape = image.shape[:2]
-    maxdelta = min(shape)/10
+     # do more aggressive shift
+    #maxdelta = min(shape)/10
+    maxdelta = min(shape)/5
     dx,dy = np.random.randint(-maxdelta,maxdelta,size=(2))
     newimg = np.zeros(image.shape,dtype=np.uint8)
     

@@ -9,5 +9,5 @@ for i in "$DIR"/*; do
 #for i in $TESTLIST; do
     #echo $i
     echo $(basename "$i")
-    python create_detections.py /home/ubuntu/anyan/harvey_data/bboxes_tomnod_2class_noclean.geojson -c /home/ubuntu/anyan/models/research/models/harvey_ssd_inceptionv2_ms_noclean_2class/harvey_ssd_inceptionv2_ms_noclean_2class_80280.pb -cs 200 -o 'preds_output/'$(basename "$i")'.txt' $i
+    python create_detections.py /home/ubuntu/anyan/harvey_data/bboxes_tomnod_2class_noclean.geojson -c /home/ubuntu/anyan/models/research/models/harvey_ssd_inceptionv2_ms_noclean_2class_v2/harvey_ms_2class_v2_96224.pb -cs 200 -o 'preds_output/'$(basename "$i")'.txt' $i
 done
