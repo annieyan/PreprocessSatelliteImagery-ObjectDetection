@@ -20,6 +20,9 @@ import numpy as np
 import json
 from tqdm import tqdm
 import aug_util as aug
+import random
+
+
 """
 xView processing helper functions for use in data processing.
 """
@@ -278,8 +281,8 @@ def boxes_from_coords(coords):
 
 
 # given a 2048 tif and its labels, chip it to small images that centered with each
-# bounding boxes
-# resolution
+# bounding boxes. Add random offsets to avoid placing bboxes at the center all the 
+# other, otherwise models will overfit to the bbox in the center
 def crop_from_center(img,coords_chip,classes_chip, uids_chip, resolution = (200,200)):
     w = img.shape[0]
     h = img.shape[1]
@@ -297,29 +300,33 @@ def crop_from_center(img,coords_chip,classes_chip, uids_chip, resolution = (200,
 #         bbox_y_center = (ymin + ymax) /2
         bbox_y_center = (xmin + xmax)/2
         bbox_x_center = (ymin + ymax) /2
+
+        # generate random offsets for x and y
+        offset_x = random.randint(-40, 40)
+        offset_y = random.randint(-40, 40)
         # force the crop to be square and contain the chosen bbox
-        if bbox_x_center < 1/2 * crop_w:
+        if bbox_x_center + offset_x < 1/2 * crop_w:
              # start from leftmost
             startx = 0
             endx = int(startx + crop_w)
             # should consider the case: if endx < xmax
-        elif bbox_x_center > w - 1/2 * crop_w:
+        elif bbox_x_center + offset_x > w - 1/2 * crop_w:
             endx = w
             startx = int(w - crop_w)
            
         else:
-            endx = int(bbox_x_center + 1/2 * crop_w)
+            endx = int(bbox_x_center + + offset_x +  1/2 * crop_w)
             #startx = int(w - crop_w)
-            startx = int(bbox_x_center - 1/2 * crop_w)
-        if bbox_y_center < 1/2 * crop_h:
+            startx = int(bbox_x_center + offset_x - 1/2 * crop_w)
+        if bbox_y_center + offset_y < 1/2 * crop_h:
             starty = 0
             endy = int(starty + crop_h)
-        elif bbox_y_center > int(h - 1/2 *crop_h):
+        elif bbox_y_center + offset_y > int(h - 1/2 *crop_h):
             endy = h
             starty = int(endy - crop_h)
         else:
-            endy = int(bbox_y_center + 1/2 * crop_h)
-            starty = int(bbox_y_center - 1/2 * crop_h)
+            endy = int(bbox_y_center ++ offset_y+ 1/2 * crop_h)
+            starty = int(bbox_y_center + offset_y - 1/2 * crop_h)
         newimg = img[startx: endx, starty: endy]
         newboxes = []
         newclasses = []

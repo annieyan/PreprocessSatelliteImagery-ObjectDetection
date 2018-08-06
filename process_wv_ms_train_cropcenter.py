@@ -118,6 +118,7 @@ def detect_clouds(img,  boxes, classes):
     print('rows_to_delete',rows_to_delete)
             
     if len(rows_to_delete) == 0:
+        classes = np.array(classes)
         return img,  boxes, classes
     else:
         # return boxes and classes with clouds removed
@@ -275,7 +276,11 @@ if __name__ == "__main__":
     num_cloud_rm = 0  # number of 512 x 512 chips that have clouds removed
     num_black = 0  # number of 512 x 512 chips that have black parts 
 
-
+    # debug
+    num_class1 = 0
+    num_class2 = 0
+    num_class1_aug = 0
+    num_class2_aug = 0
 
     for res_ind, it in enumerate(res):
         tot_box = 0
@@ -323,8 +328,14 @@ if __name__ == "__main__":
 
                 # debug: changed image,box[idx],classes_final[idx] to newly constructed img and box
                 #tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
-               
-              
+                
+                # debug
+                # get statistics about number of damaged buildings and non-damaged buildings
+                print("type of new_classes: ", type(new_classes))
+                print('new_classes', new_classes)
+                #print('new_classes[new_classes==1]: ', new_classes.count(1))
+                local_class1 = new_classes[new_classes==1].shape[0]
+                local_class2 = new_classes[new_classes==2].shape[0]
                 
                 # debug
                 # here only write into TF RECORD classes == 1
@@ -343,6 +354,10 @@ if __name__ == "__main__":
                 if (ind_chips < max_chips_per_res and np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
                     tot_box+=np.array(float_list_value_xmin).shape[0]
                     
+                    #debug
+                    num_class1 += local_class1
+                    num_class2 += local_class2 
+                    
                     #if idx < split_ind:
                      #   test_writer.write(tf_example.SerializeToString())
                       #  test_chips+=1
@@ -356,11 +371,12 @@ if __name__ == "__main__":
                     #else:
                     train_writer.write(tf_example.SerializeToString())
                     train_chips += 1
+                    '''
                     if SAVE_IMAGES:
                                     # debug: changed save dir
                             #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_train_2class_noclean/img_%s_%s.png'%(name,str(idx)))
                         aug.draw_bboxes(image, new_coords).save('./harvey_ms_inspect_train_2class_noclean_cropcenter/img_%s_%s.png'%(name,str(idx)))
-
+                    '''
 
      
                     ind_chips +=1
@@ -400,7 +416,7 @@ if __name__ == "__main__":
                         # this chip contains minor classes
                         #if np.any(classes_final[idx][:]== class_id):
                         #if class_id in set(classes_final[idx]) and idx > split_ind:
-                        if class_id in set(new_classes):
+                        if class_id in set(new_classes) and local_class1 > local_class2:
                           #       skip_augmentation.add(idx)
                             MINOR_CLASS_FLAG = True
                          #   print('trying to call expand_aug for chip: ', idx)
@@ -420,7 +436,13 @@ if __name__ == "__main__":
                                 # debug
                                 # added to record only damaged buidings
                                 tf_example_aug = tfr.to_tf_example(aug_image, boxes_aug[aug_idx],classes_aug[aug_idx])            
-                                #Check to make sure that the TF_Example has valid bounding boxes.  
+                               
+                                aug_local_num_class1 = classes_aug[aug_idx].count(1)
+                                aug_local_num_class2 = classes_aug[aug_idx].count(2)
+
+
+
+                #Check to make sure that the TF_Example has valid bounding boxes.  
                 #If there are no valid bounding boxes, then don't save the image to the TFRecord.
                                 float_list_value_xmin = tf_example_aug.features.feature['image/object/bbox/xmin'].float_list.value
                                 float_list_value_xmax = tf_example_aug.features.feature['image/object/bbox/xmax'].float_list.value
@@ -437,11 +459,15 @@ if __name__ == "__main__":
                                     train_chips+=1
                                     num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
                          #           num_aug_this_class=num_aug_this_class + 1
+                                    
+                                    num_class1_aug += aug_local_num_class1
+                                    num_class2_aug += aug_local_num_class2
+
                                     # debug
                                     if aug_idx%10 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
                                         aug_image = (aug_image).astype(np.uint8)
-                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./MS_expand_aug_random_200_cropcenter/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
+                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./MS_expand_aug_random_200_cropcenter_changeaug/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
                             # debug
                             print('augmenting class: ', class_id)
                             print('number of augmentation: ',num_aug)
@@ -467,7 +493,7 @@ if __name__ == "__main__":
                             # modified to use the removed cloud version of bboxes
                             # image, new_coords, new_classes
                             #if p == 0:
-                            newimg,nb = aug.shift_image(image,new_coords)
+                            newimg,nb, shifted_classes = aug.shift_image_formatted(image,new_coords, new_classes)
                                 #newimg,nb = aug.shift_image(newimg,box[idx])
                             #elif p == 1:
                              #   newimg,nb = aug.rotate_image_and_boxes(newimg,deg,center,new_coords)
@@ -478,6 +504,12 @@ if __name__ == "__main__":
                               #  newimg,nb = aug.shift_image(newimg,nb)
                                 
                             newimg = (newimg).astype(np.uint8)
+                            local_aug2_class1 = shifted_classes[shifted_classes==1].shape[0]
+                            local_aug2_class2 = shifted_classes[shifted_classes==2].shape[0]                            
+
+
+
+
                             #if idx%100 == 0 and SAVE_IMAGES:
                                 #debug
                                 # changed save dir
@@ -486,7 +518,7 @@ if __name__ == "__main__":
                             if len(nb) > 0:
                                 # debug
                                 # modified to use the cloud removed bboxs
-                                tf_example_aug2 = tfr.to_tf_example(newimg,nb,new_classes)
+                                tf_example_aug2 = tfr.to_tf_example(newimg,nb,shifted_classes)
                                 #tf_example = tfr.to_tf_example(newimg,nb,classes_final[idx])
 
  #Check to make sure that the TF_Example has valid bounding boxes.  
@@ -503,6 +535,10 @@ if __name__ == "__main__":
 
                                     train_writer.write(tf_example_aug2.SerializeToString())
                                     train_chips+=1
+
+                                    num_class1_aug += local_aug2_class1
+                                    num_class2_aug += local_aug2_class2
+
 
                                 #DonI't count augmented chips for chip indices
                                 # changed
@@ -534,6 +570,15 @@ if __name__ == "__main__":
     # debug
     print('num of black small chips removed: ', num_black)
     print('num of small chips containing clouds:', num_cloud_rm)
+
+    print('num of original class 1 bboxes: ', num_class1)
+    print('num of original class 2 bboxes: ', num_class2)
+
+    print('num of class 1 augmented: ', num_class1_aug)
+    print('num of class 2 augmented: ', num_class2_aug)
+ 
+    print('num of class 1 in total: ', num_class1_aug + num_class1)
+    print('num of class 2 in total: ', num_class2_aug + num_class2)
 
     logging.info("saved: %d train chips" % train_chips)
     #logging.info("saved: %d test chips" % test_chips)

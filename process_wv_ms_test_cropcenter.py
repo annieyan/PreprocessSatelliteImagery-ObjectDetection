@@ -364,11 +364,11 @@ if __name__ == "__main__":
                     
                     # debug
                     # store the training and validation images with bboxes for inspection
-                    '''
+                    
                     if SAVE_IMAGES:
                                     # debug: changed save dir
-                        aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect/img_%s_%s.png'%(name,str(idx)))
-                    '''
+                        aug.draw_bboxes(image, new_coords).save('./harvey_val_ms_noclean_cropcenter_shift/img_%s_%s.png'%(name,str(idx)))
+                    
                 
                     #Make augmentation probability proportional to chip size.  Lower chip size = less chance.
                     #This makes the chip-size imbalance less severe.
