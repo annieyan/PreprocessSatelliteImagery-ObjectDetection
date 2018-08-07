@@ -126,26 +126,16 @@ Output:
 # https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
 # https://stackoverflow.com/questions/16739290/composing-functions-in-python 
 def expand_aug_random(img, boxes, classes, class_id, num_aug = 15):
-    func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'shift_image_formatted', 'rotate_image_and_boxes_formatted']  # 8
+    func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'rotate_image_and_boxes_formatted']  # 8
     
     random_list = random_subsets(func_list, num_aug)
     #debug
     print('random functions to use: ', random_list)
-    #print('locals, ', locals())
-    # number of augmentation = # of all combinations
-    # all_subset contains empty set, so -1
-    #num_aug = len(list(all_subset)) -1
     # debug
-    #print('one image is augmented into: ', num_aug)
-    # number of different choices of augmentation done to one image
     w,h, _ = img.shape
     images = np.zeros((num_aug,w,h,3))
     total_boxes = {}
     total_classes = {}
-
-    #newimg =  np.copy(img)
-    #newboxes = np.copy(boxes)
-    #newclasses = np.copy(classes)
 
     k = 0   # k = [0, num_augI
     #new_fun_list = list()  # choices of combinations of with fewer than 3 functions
@@ -253,7 +243,7 @@ def random_subsets(lst, num_aug):
     new_fun_list.append(('gaussian_blur_formatted',))
     new_fun_list.append(('gaussian_blur_formatted', 'horizontal_flip'))
     new_fun_list.append(('gaussian_blur_formatted', 'vertical_flip'))
-    new_fun_list.append(('gaussian_blur_formatted', 'shift_image_formatted'))
+    #new_fun_list.append(('gaussian_blur_formatted', 'shift_image_formatted'))
     new_fun_list.append(('gaussian_blur_formatted', 'rotate_image_and_boxes_formatted'))
 
         # generate random 15 numbers from 0 to len(new_func_list)
