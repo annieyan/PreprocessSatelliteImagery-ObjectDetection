@@ -47,8 +47,11 @@ def convert_geotiff_tiff(geotiff_dir, tiff_dir):
 
 
 def main():
-  geotiff_dir = '../image_tiles_aws'
-  tiff_dir = '../converted_image_tiles_aws'
+  #geotiff_dir = '../image_tiles_aws'
+  geotiff_dir = '/home/ubuntu/anyan/harvey_data/NOAA-FEMA/all_files/study_area'
+
+  #tiff_dir = '../converted_image_tiles_aws'
+  tiff_dir = '../noaa_converted_tiles'
   convert_geotiff_tiff(os.path.abspath(geotiff_dir), os.path.abspath(tiff_dir))
 
 

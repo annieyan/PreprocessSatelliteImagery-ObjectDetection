@@ -125,9 +125,12 @@ Output:
 '''
 # https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
 # https://stackoverflow.com/questions/16739290/composing-functions-in-python 
-def expand_aug_random(img, boxes, classes, class_id, num_aug = 15):
-    func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'rotate_image_and_boxes_formatted']  # 8
-    
+def expand_aug_random(img, boxes, classes, class_id, shift_or_not = False, num_aug = 15):
+    if shift_or_not == False:
+
+        func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'rotate_image_and_boxes_formatted']  # 8
+    else:
+        func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'zoomin', 'rotate_image_and_boxes_formatted', 'shift_image_formatted']
     random_list = random_subsets(func_list, num_aug)
     #debug
     print('random functions to use: ', random_list)
