@@ -26,6 +26,7 @@ Augmentation will be applied to chips that contain damaged buildings (class1)
 Additional augmentation is done by shifting small chips,
 But shifting is done in big tiff, instead of leaving black pixels at the edge
 
+Optional
 Then randomly discard some chips that contain ONLY non-damaged buildings (class2) 
 '''
 
@@ -241,8 +242,8 @@ if __name__ == "__main__":
 
     AUGMENT = args.augment
     # debug
-    #SAVE_IMAGES = False
-    SAVE_IMAGES = True
+    SAVE_IMAGES = False
+    #SAVE_IMAGES = True
     images = {}
     boxes = {}
     train_chips = 0
@@ -403,13 +404,15 @@ if __name__ == "__main__":
                             #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_val_2class_noclean/img_%s_%s.png'%(name,str(idx)))
                         #    aug.draw_bboxes(image, new_coords).save('./harvey_ms_img_inspect_val_2class_noclean/img_%s_%s.png'%(name,str(idx)))
    
+                    '''
                     # debug
                     # randomly discard chips that contain ONLY class2
                     if local_class1 == 0:
-                        p = np.random.randint(0,5)
+                        p = np.random.randint(0,10)
                         if p < 1:
                             print('discarding this chip that contains ONLY class2')
                             continue
+                    '''
 
                     if local_class1 > 0:
                         num_class1_chip +=1
@@ -607,8 +610,8 @@ if __name__ == "__main__":
     print('num of class 1 bbox augmented: ', num_class1_aug_bbox)
     print('num of class 2 bbox augmented: ', num_class2_aug_bbox)
 
-    print('num of class 1 bbox in total: ', num_class1_aug + num_class1_bbox)
-    print('num of class 2 bbox in total: ', num_class2_aug + num_class2_bbox)
+    print('num of class 1 bbox in total: ', num_class1_aug_bbox + num_class1_bbox)
+    print('num of class 2 bbox in total: ', num_class2_aug_bbox + num_class2_bbox)
 
  
 

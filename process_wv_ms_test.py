@@ -243,7 +243,7 @@ if __name__ == "__main__":
     #Parameters
     max_chips_per_res = 100000
     #train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
-    test_writer = tf.python_io.TFRecordWriter("harvey_test_%s.record" % args.suffix)
+    test_writer = tf.python_io.TFRecordWriter("harvey_%s.record" % args.suffix)
 
     #coords,chips,classes = wv.get_labels(args.json_filepath)
     coords,chips,classes,uids = wv.get_labels_w_uid_nondamaged(args.json_filepath)

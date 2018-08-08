@@ -406,7 +406,7 @@ if __name__ == "__main__":
  
 
 
-                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id)
+                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id, True)
 
                             #debug
                             print('augmentig chip: ', idx)
