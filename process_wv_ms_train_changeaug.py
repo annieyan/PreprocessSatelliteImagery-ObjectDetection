@@ -258,7 +258,7 @@ if __name__ == "__main__":
     num_class2_aug_bbox = 0
     num_class1_aug_chip = 0
     num_class2_aug_chip = 0
-
+    num_shifted_chips = 0 # number of chips added by shift
     #Parameters
     max_chips_per_res = 100000
     train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
@@ -314,17 +314,25 @@ if __name__ == "__main__":
             #print('classes[chips==name], ', classes[chips==name])
 
             im1,box1,classes_final1 = wv.chip_image(arr,coords[chips==name],classes[chips==name],it)
+            
+
+#Shuffle images & boxes all at once. Comment out the line below if you don't want to shuffle images
+            im1,box1,classes_final1 = shuffle_images_and_boxes_classes(im1,box1,classes_final1)
+
+
 
             # do translation here / shift while chipping
             prob_shift = np.random.randint(5,10)
 
             im2,box2,classes_final2 = wv.random_crop_from_center(arr,coords[chips==name],classes[chips==name],  prob_shift, it)            
+            sequetial_chip_len =  im1.shape[0]
 
             im = np.zeros((im1.shape[0]+ im2.shape[0],it[0], it[0],3))
             box = box1.copy()
             classes_final = classes_final1.copy()
             
             print('# of chips added by shift: ',  im2.shape[0])
+            num_shifted_chips += im2.shape[0]
             for idx1, image in enumerate(im1):
                 im[idx1] = im1[idx1]
             for idx2, image in enumerate(im2):
@@ -332,16 +340,15 @@ if __name__ == "__main__":
                 box[im1.shape[0]+idx2] = box2[idx2]
                 classes_final[im1.shape[0]+idx2] = classes_final2[idx2]
             im = im.astype(np.uint8)
-                
+             
 
             #Shuffle images & boxes all at once. Comment out the line below if you don't want to shuffle images
-            im,box,classes_final = shuffle_images_and_boxes_classes(im,box,classes_final)
+            #im,box,classes_final = shuffle_images_and_boxes_classes(im,box,classes_final)
            # split_ind = int(im.shape[0] * args.test_percent)
             
             
             #print('classes_final len ', len(classes_final))
             #print('classes_final after shifting: ', classes_final[1])
- 
 
             for idx, image in enumerate(im):
                 if idx%sample_percent !=0:
@@ -426,9 +433,7 @@ if __name__ == "__main__":
                     if SAVE_IMAGES:
                                     # debug: changed save dir
                             #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_train_2class_noclean/img_%s_%s.png'%(name,str(idx)))
-                        aug.draw_bboxes(image, new_coords).save('./harvey_ms_inspect_train_2class_noclean_changeaug/img_%s_%s.png'%(name,str(idx)))
-
-
+                        aug.draw_bboxes(image, new_coords).save('./harvey_ms_inspect_train_2class_noclean_changeaug1/img_%s_%s.png'%(name,str(idx)))
      
                     ind_chips +=1
                     
@@ -475,7 +480,10 @@ if __name__ == "__main__":
                             # added to TF RECORD damaged building only
                             #im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords[new_classes ==1], new_classes[new_classes==1], class_id)  
 
-
+                            # debug
+                            # augment only sequential chips, not shifted chips
+                            if idx >= sequetial_chip_len:
+                                continue
                             im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id)
 
                             #debug
@@ -589,9 +597,34 @@ if __name__ == "__main__":
                                     if idx%100 ==0 and SAVE_IMAGES:
                                         # debug: changed save dir
                                         aug.draw_bboxes(newimg,nb).save('./harvey_augmented/img_aug_%s_%s_%s.png'%(name,extra,it[0]))
-        if res_ind == 0:
-            max_chips_per_res = int(ind_chips * 1.5)
-            logging.info("Max chips per resolution: %s " % max_chips_per_res)
+       
+        ''' 
+        # do translation here / shift while chipping
+        prob_shift = np.random.randint(5,10)
+
+        im2,box2,classes_final2 = wv.random_crop_from_center(arr,coords[chips==name],classes[chips==name],  prob_shift, it)
+
+        #    im = np.zeros((im1.shape[0]+ im2.shape[0],it[0], it[0],3))
+         #   box = box1.copy()
+          #  classes_final = classes_final1.copy()
+
+         print('# of chips added by shift: ',  im2.shape[0])
+           # for idx1, image in enumerate(im1):
+            #    im[idx1] = im1[idx1]
+            #for idx2, image in enumerate(im2):
+             #   im[im1.shape[0]+idx2] = im2[idx2]
+              #  box[im1.shape[0]+idx2] = box2[idx2]
+               # classes_final[im1.shape[0]+idx2] = classes_final2[idx2]
+         im2 = im2.astype(np.uint8)
+         '''
+
+
+
+
+
+    if res_ind == 0:
+        max_chips_per_res = int(ind_chips * 1.5)
+        logging.info("Max chips per resolution: %s " % max_chips_per_res)
 
         logging.info("Tot Box: %d" % tot_box)
         logging.info("Chips: %d" % ind_chips)
@@ -620,6 +653,8 @@ if __name__ == "__main__":
 
     print('num of class 1 chips augmented: ', num_class1_aug_chip)
     print('num of class 2 chips augmented: ', num_class2_aug_chip)
+
+    print('number of chips added by shift: ', num_shifted_chips)
 
     print('num of chips that contain class 1 bbox in total: ', num_class1_aug_chip + num_class1_chip)
     print('num of chips that contain class 2 bbox in total: ', num_class2_aug_chip + num_class2_chip)

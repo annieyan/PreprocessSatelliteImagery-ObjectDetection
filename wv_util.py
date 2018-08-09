@@ -302,7 +302,7 @@ def random_crop_from_center(img,coords_chip,classes_chip,  prob, resolution = (2
     k = 0
     # number of class 1 chips
     num_class1 = classes_chip[classes_chip ==1].shape[0]
-    num_aug = int(num_class1 * prob)
+    #num_aug = int(num_class1 * prob)
 
     for i in range(boxes.shape[0]):
         if classes_chip[i] == 2:

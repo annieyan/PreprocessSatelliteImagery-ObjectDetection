@@ -33,6 +33,22 @@ import time
 # geospatial
 #import data_utilities.aug_util as aug
 #import data_utilities.wv_util as wv
+'''
+This script does not apply non-maximum suppression. Instead, it uses 
+a hard score threshold i.e. 0.5 to determine the final set of detection
+bboxes out of detection results.
+
+For more on non-maximum suppresion:
+
+https://github.com/tensorflow/models/blob/master/research/object_detection/utils/per_image_evaluation.py
+
+line 336
+
+and 
+
+https://github.com/tensorflow/models/blob/master/research/object_detection/utils/np_box_mask_list_ops.py  
+
+'''
 
 
 """
@@ -341,7 +357,8 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
             arr = arr[:,:6].astype(np.float64)
             # TODO: may adjust the threshold of scores that to be counted as valid predictions
             # default = 0
-            threshold = 0.001
+            # There should be a nms mode
+            threshold = 0.4
             arr = arr[arr[:,5] > threshold]
             stclasses += list(arr[:,4])
             num_preds += arr.shape[0]
@@ -362,7 +379,6 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   #gt_coords, gt_chips, gt_classes = get_labels(path_groundtruth)
   gt_coords, gt_chips, gt_classes, _ =get_labels_w_uid_nondamaged(path_groundtruth)
 
-
   # TODO: add removing bboxes over clouds manually or / test images should not contain any black chips 
 
   gt_unique = np.unique(gt_classes.astype(np.int64))
@@ -375,12 +391,18 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   gt_unique_ig = np.array([i for i in gt_unique if int(i) not in ignored_classes], dtype = np.int64)
 
 
+  #added 
+  # get statistics of ground truth
+  num_gt_class = dict()
+  for i in gt_unique:
+      num_gt_class[i] = gt_classes[gt_classes==i].shape[0]
+
 
   if set(pchips).issubset(set(gt_unique_ig)):
       raise ValueError('The prediction files {%s} are not in the ground truth.' % str(set(pchips) - (set(gt_unique))))
 
-  print("Number of Predictions: %d" % num_preds)
-  print("Number of GT: %d" % np.sum(gt_classes.shape) )
+  #print("Number of Predictions: %d" % num_preds)
+  #print("Number of GT: %d" % np.sum(gt_classes.shape) )
 
 
   per_file_class_data = {}
@@ -415,7 +437,7 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
         # debug
         print('len(gt_matched): ', len(gt_matched))
         print('len(rects_matched): ', len(rects_matched))
-        print('rects_matched: ', rects_matched)
+        #print('rects_matched: ', rects_matched)
 
 
         #we aggregate confidence scores, rectangles, and num_gt across classes 
@@ -450,6 +472,12 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
       per_class_p[i] = np.sum(rects_matched) / len(rects_matched)
       per_class_r[i] = np.sum(rects_matched) / num_gt_per_cls[i]
       ap = ap_from_pr(precision,recall)
+
+      # added
+      print('for class: ', i)
+      print('TP: ', tp_sum[-1])
+      print('FP: ', fp_sum[-1])
+      
     else:
       ap = float('nan')
     average_precision_per_class[i] = ap
@@ -503,6 +531,18 @@ def score(path_predictions, path_groundtruth, path_output, iou_threshold = .5):
   with open(path_output + '/metrics.txt','w') as f:
       for key in vals.keys():
           f.write("%s %f\n" % (str(key),vals[key]) )
+
+
+  # added
+  print('counting score threshold larger than %s as valid prediction' % str(threshold))
+  for k, v in num_gt_class.items():
+      print('ground truth class: ', k)
+      print('the count of GT labels: ', v)
+
+  print("Number of Predictions: %d" % num_preds)
+  print("Number of GT: %d" % np.sum(gt_classes.shape) )
+
+
 
   print("Final time: %s" % str(time.time() - ttime))
 
