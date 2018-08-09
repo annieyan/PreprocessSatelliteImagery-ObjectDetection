@@ -252,7 +252,7 @@ def main():
     # read tif
     #small_tif_dir = '/home/ubuntu/anyan/harvey_data/bad_labels_small'
     
-    geojson_file = '../just_buildings_w_uid_cleaned.geojson'
+    geojson_file = '../harvey_test_2class_noclean_fixprecision.record'
     #geojson_file = '../added_non_damaged.geojson'
 
     '''
