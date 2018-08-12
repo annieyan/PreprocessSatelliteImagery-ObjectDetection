@@ -284,7 +284,7 @@ if __name__ == "__main__":
  
         class_to_aug = set([1])
     else:
-        class_to_aug = set([1])
+        class_to_aug = set([])
     num_aug_per_class = {}  # class_id: # of augmentation generated
     for class_id in class_to_aug:
         num_aug_per_class[class_id] = 0
@@ -342,7 +342,7 @@ if __name__ == "__main__":
                 for idx2, image in enumerate(im2):
                     im[im1.shape[0]+idx2] = im2[idx2]
                     box[im1.shape[0]+idx2] = box2[idx2]
-                   classes_final[im1.shape[0]+idx2] = classes_final2[idx2]
+                    classes_final[im1.shape[0]+idx2] = classes_final2[idx2]
                 im = im.astype(np.uint8)
             else:
                 im = im1.copy()
@@ -478,7 +478,7 @@ if __name__ == "__main__":
                         # this chip contains minor classes
                         #if np.any(classes_final[idx][:]== class_id):
                         #if class_id in set(classes_final[idx]) and idx > split_ind:
-                        if class_id in set(new_classes):
+                        if class_id in set(new_classes) and AUGMENT == True:
                           #       skip_augmentation.add(idx)
                             MINOR_CLASS_FLAG = True
                          #   print('trying to call expand_aug for chip: ', idx)

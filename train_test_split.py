@@ -79,8 +79,12 @@ def main():
         raise Exception('Directory does not exist ({0}).'.format(src_dir))
 
     #move_files(os.path.abspath(src_dir))
-    train_dir = 'harvey_train_train_bigtiff_v3'
-    test_dir = 'harvey_train_val_bigtiff_v3'
+    #train_dir = 'harvey_train_train_bigtiff_v3'
+    #test_dir = 'harvey_train_val_bigtiff_v3'
+    train_dir = 'noaa_train_train'
+    test_dir = 'noaa_train_val'
+
+
     seperate_nfiles(os.path.abspath(src_dir), train_dir, test_dir, 0.8)
 
 

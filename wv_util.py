@@ -76,6 +76,74 @@ def get_labels(fname):
 '''
 
 
+
+# get labels for noaa data#
+def get_labels_noaa_w_uids(fname):
+    """
+    Gets label data from a geojson label file
+    Args:
+        fname: file path to an xView geojson label file
+    Output:
+        Returns three arrays: coords, chips, and classes corresponding to the
+            coordinates, file-names, and classes for each ground truth.
+    """
+    x_off = 10
+    y_off = 10
+    add_np = np.array([-x_off, -y_off, x_off, y_off])
+    with open(fname) as f:
+        data = json.load(f)
+
+    coords = np.zeros((len(data['features']),4))
+    chips = np.zeros((len(data['features'])),dtype="object")
+    classes = np.zeros((len(data['features'])))
+    uids = np.zeros((len(data['features'])))
+
+    for i in tqdm(range(len(data['features']))):
+        if data['features'][i]['properties']['bb'] != []:
+            try: 
+                full_imgid = data['features'][i]['properties']['image']
+                b_id = full_imgid.split('/')[-1]
+                #print('b_id', b_id)
+#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
+#                     print('found chip!')
+                bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
+                val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
+                uids[i] = data['features'][i]['properties']['id']
+#                 ymin = val[3]
+#                 ymax = val[1]
+#                 val[1] =  ymin
+#                 val[3] = ymax
+                chips[i] = b_id
+                classes[i] = data['features'][i]['properties']['type_id']
+            except:
+#                 print('i:', i)
+#                 print(data['features'][i]['properties']['bb'])
+                  pass
+            if val.shape[0] != 4:
+                print("Issues at %d!" % i)
+            else:
+                coords[i] = val
+        else:
+            chips[i] = 'None'
+    # debug
+    # added offsets to each coordinates
+    # need to check the validity of bbox maybe
+    coords = np.add(coords, add_np)
+    
+    return coords, chips, classes, uids
+
+
+
+
+
+
+
+
+
+
+
+
+
 # modified to buffer the bounding boxes by 15 pixels
 def get_labels(fname):
     """

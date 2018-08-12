@@ -18,7 +18,7 @@ limitations under the License.
 
 
 '''
-This is for creating a multiclass training data for harvey hurricane
+This is for creating a multiclass test or validation data for harvey hurricane
 In the case of Digital Globe data, there are two classes: damaged buildings / non-damaged buildings
 This script produces TF record for validation data or test data
 '''
