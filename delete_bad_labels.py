@@ -83,7 +83,7 @@ def get_labels_w_uid(fname):
                 chips[i] = b_id
                 classes[i] = data['features'][i]['properties']['TYPE_ID']
                 # debug
-                uids[i] = int(data['features'][i]['properties']['bb_uid'])
+                uids[i] = int(data['features'][i]['properties']['uniqueid'])
             except:
 #                 print('i:', i)
 #                 print(data['features'][i]['properties']['bb'])
@@ -144,12 +144,14 @@ def delete_bbox_from_geojson(old_geojson, rows_to_delete):
     gfN = gpd.read_file(old_geojson)
     index_list = []
     df_len = len(gfN)
-    
+    rows_to_delete = [str(item).split('.')[0] for item in rows_to_delete]
+    rows_to_delete = list(map(int, rows_to_delete))
 
     for i in range(0, df_len):
-        print('idx', i)
+        #print('idx', i)
         series_tmp = gfN.loc[i]
-        if series_tmp['bb_uid'] in set(rows_to_delete):
+        if series_tmp['uniqueid'] in set(rows_to_delete):
+            print('deleting id %s'%str(i))
             continue
         index_list.append(i)
     geometries = [xy for xy in list(gfN.iloc[index_list]['geometry'])]
@@ -232,9 +234,9 @@ def parse_tif_names(small_tif_dir):
 def parse_tif_names_from_csv(path_to_csv):
     #files = [os.path.join(small_tif_dir, f) for f in os.listdir(small_tif_dir)]
     #fnames = [f for f in os.listdir(small_tif_dir)]
-    bad_small_tifs = pd.read_csv(path_to_csv)
-    bad_small_list = set(bad_small_tifs['bad_label'].tolist())
-
+    bad_small_tifs = pd.read_csv(path_to_csv, header = None)
+    #bad_small_list = set(bad_small_tifs['bad_label'].tolist())
+    bad_small_list = set(bad_small_tifs[0].tolist())
 
     bad_big_tif_list = set()
     for fname in bad_small_list:
@@ -252,7 +254,7 @@ def main():
     # read tif
     #small_tif_dir = '/home/ubuntu/anyan/harvey_data/bad_labels_small'
     
-    geojson_file = '../harvey_test_2class_noclean_fixprecision.record'
+    geojson_file = '../harvey_ms_noclean_2class_fixedprecision.geojson'
     #geojson_file = '../added_non_damaged.geojson'
 
     '''
@@ -269,9 +271,9 @@ def main():
     '''
     # RUN THIS TO DELETE UIDS FROM GEOJSON
     # read bad labels from file
-    bad_label_path = '../second_inspection_big_tiff.csv'
-    bad_label_df = pd.read_csv(bad_label_path)
-    bad_label_list = set(bad_label_df['bad_labels'].tolist())
+    bad_label_path = './all_bad_labels_harvey.csv'
+    bad_label_df = pd.read_csv(bad_label_path, header = None)
+    bad_label_list = set(bad_label_df[0].tolist())
     
    
 

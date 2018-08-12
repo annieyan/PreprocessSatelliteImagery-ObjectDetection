@@ -39,14 +39,6 @@ Image augmentation utilities to be used for processing the dataset.  Importantly
 """
 # debug
 # added additional aumentation choices for enlarging small classes
-# 1. change_contrast: for cloud shadows
-#             : for cloud haziness
-# 2. Horizontal flip
-# 3. vertical  flip
-# 4. Image scale
-# 5. change brightness
-# 6. change aspect ratio / Gaussian noises / jitter
-# for each image, apply all possible combinations of 6 augmentation methods. So in total, there will be 63 variations. 
 '''
 Expand one training image into multiple ones through augmentation
 The augmentation is agressive in that it uses all possible combinations of 
