@@ -18,19 +18,11 @@ limitations under the License.
 
 
 '''
-This is for creating a on-class training data for harvey hurricane
-In the case of Digital Globe data, there are two classes: damaged/flooded  buildings
-This file produce TF record for training data only.
-Big tiffs (2048) are chipped sequentially into 200 x 200.
-Augmentation will be applied to chips that contain damaged buildings (class1)
-Additional augmentation is done by shifting small chips,
-But shifting is done in big tiff, instead of leaving black pixels at the edge
-
-
-Small chips that contain buildings (either damaged or damaged ) were added into 
-training data. But only Damaged building bounding boxes are added to training data
-
+This is for creating a multiclass test or validation data for harvey hurricane
+In the case of Digital Globe data, there are two classes: damaged buildings / non-damaged buildings
+This script produces TF record for validation data or test data
 '''
+
 
 from PIL import Image
 import tensorflow as tf
@@ -90,7 +82,6 @@ def detect_clouds(img,  boxes, classes):
     #print('w,h', w, h)
     var_threshold = 18
     rows_to_delete = list()
-    boxes = np.array(boxes)
     for i in range(boxes.shape[0]):
         xmin, ymin, xmax, ymax = boxes[i]
 #         ymin = 0
@@ -124,7 +115,6 @@ def detect_clouds(img,  boxes, classes):
     print('rows_to_delete',rows_to_delete)
             
     if len(rows_to_delete) == 0:
-        classes = np.array(classes)
         return img,  boxes, classes
     else:
         # return boxes and classes with clouds removed
@@ -138,7 +128,7 @@ def detect_clouds(img,  boxes, classes):
 
 
 
-def get_images_from_filename_array(coords,chips,classes,folder_names,res=(250,250)):
+def get_images_from_filename_array(coords,chips,classes,folder_names,res=(200,200)):
     """
     Gathers and chips all images within a given folder at a given resolution.
 
@@ -248,22 +238,20 @@ if __name__ == "__main__":
     images = {}
     boxes = {}
     train_chips = 0
-    #test_chips = 0
-
+    test_chips = 0
 
     num_class1_bbox = 0   # num of bbox of class1
     num_class2_bbox = 0
     num_class1_chip = 0   # number of chips contain class 1
     num_class2_chip = 0
-    num_class1_aug_bbox = 0  # number of augmentated bbox
-    num_class2_aug_bbox = 0
-    num_class1_aug_chip = 0
-    num_class2_aug_chip = 0
-    num_shifted_chips = 0 # number of chips added by shift
+
+
+
+
     #Parameters
     max_chips_per_res = 100000
-    train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
-    #test_writer = tf.python_io.TFRecordWriter("harvey_test_%s.record" % args.suffix)
+    #train_writer = tf.python_io.TFRecordWriter("harvey_train_%s.record" % args.suffix)
+    test_writer = tf.python_io.TFRecordWriter("harvey_%s.record" % args.suffix)
 
     #coords,chips,classes = wv.get_labels(args.json_filepath)
     coords,chips,classes,uids = wv.get_labels_w_uid_nondamaged(args.json_filepath)
@@ -280,12 +268,8 @@ if __name__ == "__main__":
     # debug
     sample_percent = args.sample_percent
     # a list of classes to be augment. Set to set to be empty if no augmentation
-    # is wanted
-    if AUGMENT == True:
- 
-        class_to_aug = set([1])
-    else:
-        class_to_aug = set([])
+    # is wanted 
+    class_to_aug = set([])
     num_aug_per_class = {}  # class_id: # of augmentation generated
     for class_id in class_to_aug:
         num_aug_per_class[class_id] = 0
@@ -318,46 +302,13 @@ if __name__ == "__main__":
             print('file name: ', name)
             #print('classes[chips==name], ', classes[chips==name])
 
-            im1,box1,classes_final1 = wv.chip_image(arr,coords[chips==name],classes[chips==name],it)
-            
 
-#Shuffle images & boxes all at once. Comment out the line below if you don't want to shuffle images
-            im1,box1,classes_final1 = shuffle_images_and_boxes_classes(im1,box1,classes_final1)
-
-            if AUGMENT:
-
-            # do translation here / shift while chipping
-                prob_shift = np.random.randint(5,10)
-
-                im2,box2,classes_final2 = wv.random_crop_from_center(arr,coords[chips==name],classes[chips==name],  prob_shift, it)            
-                sequetial_chip_len =  im1.shape[0]
-
-                im = np.zeros((im1.shape[0]+ im2.shape[0],it[0], it[0],3))
-                box = box1.copy()
-                classes_final = classes_final1.copy()
-            
-                print('# of chips added by shift: ',  im2.shape[0])
-                num_shifted_chips += im2.shape[0]
-                for idx1, image in enumerate(im1):
-                    im[idx1] = im1[idx1]
-                for idx2, image in enumerate(im2):
-                    im[im1.shape[0]+idx2] = im2[idx2]
-                    box[im1.shape[0]+idx2] = box2[idx2]
-                    classes_final[im1.shape[0]+idx2] = classes_final2[idx2]
-                im = im.astype(np.uint8)
-            else:
-                im = im1.copy()
-                box = box1.copy()
-                classes_final = classes_final1.copy()
+            im,box,classes_final = wv.chip_image(arr,coords[chips==name],classes[chips==name],it)
 
             #Shuffle images & boxes all at once. Comment out the line below if you don't want to shuffle images
-            #im,box,classes_final = shuffle_images_and_boxes_classes(im,box,classes_final)
-           # split_ind = int(im.shape[0] * args.test_percent)
+            im,box,classes_final = shuffle_images_and_boxes_classes(im,box,classes_final)
+            split_ind = int(im.shape[0] * args.test_percent)
             
-            
-            #print('classes_final len ', len(classes_final))
-            #print('classes_final after shifting: ', classes_final[1])
-
             for idx, image in enumerate(im):
                 if idx%sample_percent !=0:
                     continue
@@ -376,21 +327,16 @@ if __name__ == "__main__":
                 # debug: changed image,box[idx],classes_final[idx] to newly constructed img and box
                 #tf_example = tfr.to_tf_example(image,box[idx],classes_final[idx])
                
-                # debug
-                # get statistics about number of damaged buildings and non-damaged buildings
-                #print("type of new_classes: ", type(new_classes))
-             #   print('new_classes', new_classes)
-                #print('new_classes[new_classes==1]: ', new_classes.count(1))
-
-                # number of class 1 bbox in the small chip
-                local_class1 = new_classes[new_classes==1].shape[0]  
+              
+                
+                local_class1 = new_classes[new_classes==1].shape[0]
                 local_class2 = new_classes[new_classes==2].shape[0]
 
-            
+
                 if len(new_coords) == 1 and np.all(new_coords==0):
                     print('This chip contains no bboxes, removing...')
                     continue
- 
+
                 # debug
                 # here only write into TF RECORD classes == 1
                 tf_example = tfr.to_tf_example(image, new_coords[new_classes ==1], new_classes[new_classes == 1])
@@ -401,50 +347,42 @@ if __name__ == "__main__":
                 #Check to make sure that the TF_Example has valid bounding boxes.  
                 #If there are no valid bounding boxes, then don't save the image to the TFRecord.
                 float_list_value_xmin = tf_example.features.feature['image/object/bbox/xmin'].float_list.value
-                #float_list_value_ymin = tf_example.features.feature['image/object/bbox/ymin'].float_list.value
-                #float_list_value_xmax = tf_example.features.feature['image/object/bbox/xmax'].float_list.value
-                #float_list_value_ymax = tf_example.features.feature['image/object/bbox/ymax'].float_list.value
+ #               float_list_value_ymin = tf_example.features.feature['image/object/bbox/ymin'].float_list.value
+  #              float_list_value_xmax = tf_example.features.feature['image/object/bbox/xmax'].float_list.value
+   #             float_list_value_ymax = tf_example.features.feature['image/object/bbox/ymax'].float_list.value
 
-                #if (ind_chips < max_chips_per_res and np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
+    #            if (ind_chips < max_chips_per_res and np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
                 tot_box+=np.array(float_list_value_xmin).shape[0]
 
-                    #debug
+
+
                 num_class1_bbox += local_class1
                 num_class2_bbox += local_class2
-            
-                    #if idx < split_ind:
-                     #   test_writer.write(tf_example.SerializeToString())
-                      #  test_chips+=1
-                       # if SAVE_IMAGES:
-                                    # debug: changed save dir
-                            #debug
-                            # draw only DAMAGED buildings
-                            #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_val_2class_noclean/img_%s_%s.png'%(name,str(idx)))
-                        #    aug.draw_bboxes(image, new_coords).save('./harvey_ms_img_inspect_val_2class_noclean/img_%s_%s.png'%(name,str(idx)))
-   
-                '''
-                    # debug
-                    # randomly discard chips that contain ONLY class2
-                    if local_class1 == 0:
-                        p = np.random.randint(0,10)
-                        if p < 1:
-                            print('discarding this chip that contains ONLY class2')
-                            continue
-                '''
 
                 if local_class1 > 0:
                     num_class1_chip +=1
                 if local_class2 > 0:
                     num_class2_chip +=1
-
+                    
+                    #if idx < split_ind:
+                test_writer.write(tf_example.SerializeToString())
+                test_chips+=1
+                if SAVE_IMAGES and idx %5 == 0:
+                                    # debug: changed save dir
+                            #debug
+                            # draw only DAMAGED buildings
+                            #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_val_2class_noclean/img_%s_%s.png'%(name,str(idx)))
+                    aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./tomnod_valtest_1class_inspect/img_%s_%s.png'%(name,str(idx)))
 
                     #else:
-                train_writer.write(tf_example.SerializeToString())
-                train_chips += 1
-                if SAVE_IMAGES and idx%5 ==0:
+                     #   train_writer.write(tf_example.SerializeToString())
+                      #  train_chips += 1
+                       # if SAVE_IMAGES:
                                     # debug: changed save dir
                             #aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./harvey_ms_img_inspect_train_2class_noclean/img_%s_%s.png'%(name,str(idx)))
-                    aug.draw_bboxes(image, new_coords[new_classes ==1]).save('./tomnod_1class_train_inspect/img_%s_%s.png'%(name,str(idx)))
+                        #    aug.draw_bboxes(image, new_coords).save('./harvey_ms_img_inspect_train_2class_noclean/img_%s_%s.png'%(name,str(idx)))
+
+
      
                 ind_chips +=1
                     
@@ -456,12 +394,10 @@ if __name__ == "__main__":
                         aug.draw_bboxes(image, new_coords).save('./harvey_img_inspect/img_%s_%s.png'%(name,str(idx)))
                 '''
                 
-
                     #Make augmentation probability proportional to chip size.  Lower chip size = less chance.
                     #This makes the chip-size imbalance less severe.
-                    #prob = np.random.randint(0,np.max(res))
+       #             prob = np.random.randint(0,np.max(res))
                     #for 200x200: p(augment) = 200/500 ; for 300x300: p(augment) = 300/500 ...
-                #    prob = np.random.randint(0,50)
 
 
                     # debug
@@ -473,8 +409,9 @@ if __name__ == "__main__":
                     # unpack the output to tfrecord TRAINING data. 
                     # 2. If the chip does not contain any minor classes, go to normal augmentation
                     #skip_augmentation = set()  # contains a list of chips that contain minor classes
-                MINOR_CLASS_FLAG = False
-                for class_id in class_to_aug:
+                '''
+                    MINOR_CLASS_FLAG = False
+                    for class_id in class_to_aug:
                         #num_aug_per_class[class_id] = 0
                         #num_aug_this_class = 0
                         # debug
@@ -482,75 +419,55 @@ if __name__ == "__main__":
                         # this chip contains minor classes
                         #if np.any(classes_final[idx][:]== class_id):
                         #if class_id in set(classes_final[idx]) and idx > split_ind:
-                    if class_id in set(new_classes) and AUGMENT == True:
+                        if class_id in set(new_classes) and idx > split_ind:
                           #       skip_augmentation.add(idx)
-                        MINOR_CLASS_FLAG = True
+                            MINOR_CLASS_FLAG = True
                          #   print('trying to call expand_aug for chip: ', idx)
                             #im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, box[idx], classes_final[idx], class_id)  
                             # debug
                             # added to TF RECORD damaged building only
                             #im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords[new_classes ==1], new_classes[new_classes==1], class_id)  
+ 
 
-                            # debug
-                            # augment only sequential chips, not shifted chips
-                        if idx >= sequetial_chip_len:
-                            continue
-                        im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords[new_classes==1], new_classes[new_classes==1], class_id)
+
+                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id)
 
                             #debug
-                        print('augmentig chip: ', idx)
-                        num_aug = 0
-                        for aug_idx, aug_image in enumerate(im_aug):
+                            print('augmentig chip: ', idx)
+                            num_aug = 0
+                            for aug_idx, aug_image in enumerate(im_aug):
                                 # debug
                                 # added to record only damaged buidings
-                            tf_example_aug = tfr.to_tf_example(aug_image, boxes_aug[aug_idx],classes_aug[aug_idx])
-
-                            aug_local_num_class1 = classes_aug[aug_idx].count(1)
-                            aug_local_num_class2 = classes_aug[aug_idx].count(2)
-
-
-            
+                                tf_example_aug = tfr.to_tf_example(aug_image, boxes_aug[aug_idx],classes_aug[aug_idx])            
                                 #Check to make sure that the TF_Example has valid bounding boxes.  
                 #If there are no valid bounding boxes, then don't save the image to the TFRecord.
-                            float_list_value_xmin = tf_example_aug.features.feature['image/object/bbox/xmin'].float_list.value
-                             #   float_list_value_xmax = tf_example_aug.features.feature['image/object/bbox/xmax'].float_list.value
-                              #  float_list_value_ymin = tf_example_aug.features.feature['image/object/bbox/ymin'].float_list.value
-                               # float_list_value_ymax = tf_example_aug.features.feature['image/object/bbox/ymax'].float_list.value
+                                float_list_value_xmin = tf_example_aug.features.feature['image/object/bbox/xmin'].float_list.value
+                                float_list_value_xmax = tf_example_aug.features.feature['image/object/bbox/xmax'].float_list.value
+                                float_list_value_ymin = tf_example_aug.features.feature['image/object/bbox/ymin'].float_list.value
+                                float_list_value_ymax = tf_example_aug.features.feature['image/object/bbox/ymax'].float_list.value
 
                                 # debug
                                 #num_aug = 0
-                            #if (np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
-                            tot_box+=np.array(float_list_value_xmin).shape[0]
+                                if (np.array(float_list_value_xmin).any() and np.array(float_list_value_xmax).any() and np.array(float_list_value_ymin).any() and np.array(float_list_value_ymax).any()):
+                                    tot_box+=np.array(float_list_value_xmin).shape[0]
                     
-                            train_writer.write(tf_example_aug.SerializeToString())
-                            num_aug = num_aug + 1
-                            train_chips+=1
-                            num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
+                                    train_writer.write(tf_example_aug.SerializeToString())
+                                    num_aug = num_aug + 1
+                                    train_chips+=1
+                                    num_aug_per_class[class_id] = num_aug_per_class[class_id]+1
                          #           num_aug_this_class=num_aug_this_class + 1
-                                    
-                            num_class1_aug_bbox += aug_local_num_class1
-                            num_class2_aug_bbox += aug_local_num_class2
-                                    
-                            if aug_local_num_class1 > 0:
-                                num_class1_aug_chip += 1
-                            if aug_local_num_class2 > 0:
-                                num_class2_aug_chip += 1
-
-
                                     # debug
-                            if aug_idx%10 == 0 and SAVE_IMAGES:
+                                    if aug_idx%10 == 0 and SAVE_IMAGES:
                                     # debug: changed save dir
-                                aug_image = (aug_image).astype(np.uint8)
-                                aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./tomnod_aug_1class/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
+                                        aug_image = (aug_image).astype(np.uint8)
+                                        aug.draw_bboxes(aug_image,boxes_aug[aug_idx]).save('./MS_expand_aug_random_200/img_aug_%s_%s_%s_%s.png'%(name, str(idx), str(aug_idx), str(class_id)))
                             # debug
-                    print('augmenting class: ', class_id)
-                    print('number of augmentation: ',num_aug)
+                            print('augmenting class: ', class_id)
+                            print('number of augmentation: ',num_aug)
                         #num_aug_per_class[class_id] = num_aug_this_class
 
                     # it: iterator for different resolutions
-                    # The chunk below is DEPRECATED
                     # start to augment the rest
-                    '''
                     if AUGMENT and prob < it[0] and MINOR_CLASS_FLAG == False:
                         
                         for extra in range(3):
@@ -610,33 +527,9 @@ if __name__ == "__main__":
                                         # debug: changed save dir
                                         aug.draw_bboxes(newimg,nb).save('./harvey_augmented/img_aug_%s_%s_%s.png'%(name,extra,it[0]))
         '''
-        ''' 
-        # do translation here / shift while chipping
-        prob_shift = np.random.randint(5,10)
-
-        im2,box2,classes_final2 = wv.random_crop_from_center(arr,coords[chips==name],classes[chips==name],  prob_shift, it)
-
-        #    im = np.zeros((im1.shape[0]+ im2.shape[0],it[0], it[0],3))
-         #   box = box1.copy()
-          #  classes_final = classes_final1.copy()
-
-         print('# of chips added by shift: ',  im2.shape[0])
-           # for idx1, image in enumerate(im1):
-            #    im[idx1] = im1[idx1]
-            #for idx2, image in enumerate(im2):
-             #   im[im1.shape[0]+idx2] = im2[idx2]
-              #  box[im1.shape[0]+idx2] = box2[idx2]
-               # classes_final[im1.shape[0]+idx2] = classes_final2[idx2]
-         im2 = im2.astype(np.uint8)
-         '''
-
-
-
-
-
-    if res_ind == 0:
-        max_chips_per_res = int(ind_chips * 1.5)
-        logging.info("Max chips per resolution: %s " % max_chips_per_res)
+        if res_ind == 0:
+            max_chips_per_res = int(ind_chips * 1.5)
+            logging.info("Max chips per resolution: %s " % max_chips_per_res)
 
         logging.info("Tot Box: %d" % tot_box)
         logging.info("Chips: %d" % ind_chips)
@@ -649,31 +542,15 @@ if __name__ == "__main__":
     print('num of black small chips removed: ', num_black)
     print('num of small chips containing clouds:', num_cloud_rm)
 
+
     print('num of original class 1 bboxes: ', num_class1_bbox)
     print('num of original class 2 bboxes: ', num_class2_bbox)
-
-    print('num of class 1 bbox augmented: ', num_class1_aug_bbox)
-    print('num of class 2 bbox augmented: ', num_class2_aug_bbox)
-
-    print('num of class 1 bbox in total: ', num_class1_aug_bbox + num_class1_bbox)
-    print('num of class 2 bbox in total: ', num_class2_aug_bbox + num_class2_bbox)
-
- 
 
     print('num of original chips that contain class 1: ', num_class1_chip)
     print('num of original chips that cntain class 2 bboxes: ', num_class2_chip)
 
-    print('num of class 1 chips augmented: ', num_class1_aug_chip)
-    print('num of class 2 chips augmented: ', num_class2_aug_chip)
 
-    print('number of chips added by shift: ', num_shifted_chips)
-
-    print('num of chips that contain class 1 bbox in total: ', num_class1_aug_chip + num_class1_chip)
-    print('num of chips that contain class 2 bbox in total: ', num_class2_aug_chip + num_class2_chip)
-
-
-
-    logging.info("saved: %d train chips" % train_chips)
-    #logging.info("saved: %d test chips" % test_chips)
-    train_writer.close()
-    #test_writer.close() 
+    #logging.info("saved: %d train chips" % train_chips)
+    logging.info("saved: %d test chips" % test_chips)
+    #train_writer.close()
+    test_writer.close() 
