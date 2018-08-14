@@ -44,7 +44,7 @@ Expand one training image into multiple ones through augmentation
 The augmentation is agressive in that it uses all possible combinations of 
 a list of augmentation methods.
 Args:
-        img: the image to be chipped in array format
+        img: the image to be augmented
         boxes: an (N,4) array of bounding box coordinates for that image
         classes: an (N,1) array of classes for each bounding box
         class_id: the class to be augmented
@@ -53,8 +53,8 @@ Output:
         W and H are the dimensions of the image, and C is the number of color
         channels.  Also returns boxes and classes dictionaries for each corresponding chip
 '''
-# https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
-# https://stackoverflow.com/questions/16739290/composing-functions-in-python 
+
+
 def expand_aug_full(img, boxes, classes, class_id):
     func_list = ['change_brightness', 'change_contrast', 'vertical_flip', 'horizontal_flip', 'median_blur', 'zoomin']
     
@@ -105,7 +105,7 @@ Expand one training image into multiple ones (default 15) through augmentation
 The augmentation uses random combinations of 
 a list of augmentation methods.
 Args:
-        img: the image to be chipped in array format
+        img: the image
         boxes: an (N,4) array of bounding box coordinates for that image
         classes: an (N,1) array of classes for each bounding box
         class_id: the class to be augmented
