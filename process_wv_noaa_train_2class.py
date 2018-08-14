@@ -486,7 +486,7 @@ if __name__ == "__main__":
                             # augment only sequential chips, not shifted chips
                             #if idx >= sequetial_chip_len:
                              #   continue
-                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id, False, 8)
+                            im_aug,boxes_aug,classes_aug= aug.expand_aug_random(image, new_coords, new_classes, class_id, False)
 
                             #debug
                             print('augmentig chip: ', idx)
