@@ -71,8 +71,6 @@ def get_labels_w_uid(fname):
         if data['features'][i]['properties']['bb'] != []:
             try: 
                 b_id = data['features'][i]['properties']['IMAGE_ID']
-#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
-#                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
                 val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
                 
@@ -95,8 +93,6 @@ def get_labels_w_uid(fname):
         else:
             chips[i] = 'None'
     # debug
-    # added offsets to each coordinates
-    # need to check the validity of bbox maybe
     coords = np.add(coords, add_np)
     
     return coords, chips, classes, uids

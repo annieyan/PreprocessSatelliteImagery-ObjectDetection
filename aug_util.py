@@ -38,7 +38,7 @@ Image augmentation utilities to be used for processing the dataset.  Importantly
     for visualizing augmented images and bboxes
 """
 # debug
-# added additional aumentation choices for enlarging small classes
+# added additional aumentation choices for enpanding small classes
 '''
 Expand one training image into multiple ones through augmentation
 The augmentation is agressive in that it uses all possible combinations of 
@@ -115,8 +115,6 @@ Output:
         W and H are the dimensions of the image, and C is the number of color
         channels.  Also returns boxes and classes dictionaries for each corresponding chip
 '''
-# https://stackoverflow.com/questions/3061/calling-a-function-of-a-module-by-using-its-name-a-string
-# https://stackoverflow.com/questions/16739290/composing-functions-in-python 
 def expand_aug_random(img, boxes, classes, class_id, shift_or_not = False, num_aug = 15):
     if shift_or_not == False:
 
@@ -406,7 +404,6 @@ def zoomin(img, boxes, classes, class_id):
     newboxes = []
     newclasses = []
     # crop bboxes and scale them 
-    # TODO: (boxes[:,0]<endy) should all turned into (boxes[:,0]<endx)???
 
     boxes = np.array(boxes)  # change to np array, otherwise, boxes[:,0] cannot access list
     x = np.logical_or( np.logical_and( (boxes[:,0]<endy),  (boxes[:,0]>starty)),
@@ -415,8 +412,6 @@ def zoomin(img, boxes, classes, class_id):
     y = np.logical_or( np.logical_and(  (out[:,1]<endx),  (out[:,1]>startx)),
                                np.logical_and((out[:,3]<endx),  (out[:,3]>startx)))
     outn = out[y]    
-    # TODO: out = np.transpose(np.vstack((np.clip(outn[:,0]-starty,0,scaled_y),
-    # should be changed to np.clip(outn[:,0]-startx,0,scaled_x ???
     out = np.transpose(np.vstack((np.clip(outn[:,0]-starty,0,scaled_y),
                                           np.clip(outn[:,1]-startx,0, scaled_x),
                                           np.clip(outn[:,2]-starty,0,scaled_y),

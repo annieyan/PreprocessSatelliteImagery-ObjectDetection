@@ -111,22 +111,14 @@ def get_bbox_count_multiclass(fname):
         if data['features'][i]['properties']['bb'] != []:
             try: 
                 b_id = data['features'][i]['properties']['Joined lay']
-#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
-#                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
                 val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
                 
-#                 ymin = val[3]
-#                 ymax = val[1]
-#                 val[1] =  ymin
-#                 val[3] = ymax
                 chips[i] = b_id
                 classes[i] = data['features'][i]['properties']['type']
                 # debug
                 uids[i] = int(data['features'][i]['properties']['uniqueid'])
             except:
-#                 print('i:', i)
-#                 print(data['features'][i]['properties']['bb'])
                   pass
             if val.shape[0] != 4:
                 print("Issues at %d!" % i)
@@ -137,7 +129,6 @@ def get_bbox_count_multiclass(fname):
     # debug
     # added offsets to each coordinates
     # need to check the validity of bbox maybe
-    #coords = np.add(coords, add_np)
     chip_unique = len(np.unique(chips))
     print('The total number of bboxes for training + test: ', len(data['features']))
     print('The total number of bboxes for damaged buildings  training + test: ', classes[classes == 1].shape[0])
@@ -156,8 +147,6 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='Get statistics for training data and test data from geojson and tif images.')
 
-    #parser.add_argument('train_dir', help='directory containing training files')
-    #parser.add_argument('test_dir', help='directory containing test files')
     parser.add_argument('src_geojson', help='source geojson')
 
     return parser.parse_args()
@@ -165,8 +154,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    #train_dir = args.train_dir
-    #test_dir = args.test_dir
     geojson_path = args.src_geojson
     #geojson_path = '../just_buildings_w_uid_second_round.geojson'
     get_bbox_count_multiclass(geojson_path)
