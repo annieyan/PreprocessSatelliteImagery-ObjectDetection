@@ -104,18 +104,12 @@ def detect_clouds(img,  boxes, classes):
             print('ymax > w')
             ymax= h
         #print(xmin, ymin, xmax, ymax)
-        # clip bbox areas
-        #cropped_img = img.crop((xmin, ymin, xmax, ymax))
         cropped_img = img[int(ymin):int(ymax), int(xmin):int(xmax)]  # note the order of w/h
-#         print(cropped_img)
-#         print(cropped_img.shape)
         array_img =  np.array(cropped_img)
         mean_img = np.mean(array_img)
         
-        #print('mean_img', mean_img, i)
         var_img = np.std(array_img)
         #print('var_img',var_img, i)
-        #if var_img < var_threshold and (cropped_img> 150).all() and (cropped_img< 255).all():
         if var_img < var_threshold and mean_img > mean_threshold_min:
             print('bounding box i has cloud', i)
             # need to delete this bbox
@@ -129,7 +123,6 @@ def detect_clouds(img,  boxes, classes):
         # return boxes and classes with clouds removed
         new_coords = np.delete(boxes, rows_to_delete, axis=0)
         new_classes = np.delete(classes, rows_to_delete, axis=0)
-        #new_uids = np.delete(uids, rows_to_delete, axis=0)
         return img, new_coords, new_classes
         
         
@@ -269,14 +262,6 @@ if __name__ == "__main__":
 
 
     # debug
-    #print('number of chips from geojson', len(chips))
-    #print('number of classes from geojson', len(classes))
-    #print('some coords: ', coords[2])
-    #print('some coords: ', coords[3000])
-    #print('classes some: ', classes[4])
-    #print('chips  ', chips[349])
-
-    # debug
     sample_percent = args.sample_percent
     # a list of classes to be augment. Set to set to be empty if no augmentation
     # is wanted
@@ -353,11 +338,6 @@ if __name__ == "__main__":
             #im,box,classes_final = shuffle_images_and_boxes_classes(im,box,classes_final)
            # split_ind = int(im.shape[0] * args.test_percent)
             
-            
-            #print('classes_final len ', len(classes_final))
-            #print('classes_final after shifting: ', classes_final[1])
-
-            for idx, image in enumerate(im):
                 if idx%sample_percent !=0:
                     continue
                  # debug
@@ -468,7 +448,6 @@ if __name__ == "__main__":
                     # this chip. The output will be a tensor of augmented images, bboxes, and classes
                     # unpack the output to tfrecord TRAINING data. 
                     # 2. If the chip does not contain any minor classes, go to normal augmentation
-                    #skip_augmentation = set()  # contains a list of chips that contain minor classes
                     MINOR_CLASS_FLAG = False
                     for class_id in class_to_aug:
                         #num_aug_per_class[class_id] = 0
