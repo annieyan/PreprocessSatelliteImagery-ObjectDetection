@@ -82,7 +82,7 @@ def get_labels_noaa_w_uids(fname):
     """
     Gets label data from a geojson label file
     Args:
-        fname: file path to an xView geojson label file
+        fname: file path to a NOAA data geojson label file
     Output:
         Returns three arrays: coords, chips, and classes corresponding to the
             coordinates, file-names, and classes for each ground truth.
@@ -103,21 +103,12 @@ def get_labels_noaa_w_uids(fname):
             try: 
                 full_imgid = data['features'][i]['properties']['image']
                 b_id = full_imgid.split('/')[-1]
-                #print('b_id', b_id)
-#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
-#                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
                 val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
                 uids[i] = data['features'][i]['properties']['id']
-#                 ymin = val[3]
-#                 ymax = val[1]
-#                 val[1] =  ymin
-#                 val[3] = ymax
                 chips[i] = b_id
                 classes[i] = data['features'][i]['properties']['type_id']
             except:
-#                 print('i:', i)
-#                 print(data['features'][i]['properties']['bb'])
                   pass
             if val.shape[0] != 4:
                 print("Issues at %d!" % i)
@@ -125,9 +116,6 @@ def get_labels_noaa_w_uids(fname):
                 coords[i] = val
         else:
             chips[i] = 'None'
-    # debug
-    # added offsets to each coordinates
-    # need to check the validity of bbox maybe
     coords = np.add(coords, add_np)
     
     return coords, chips, classes, uids
@@ -136,14 +124,7 @@ def get_labels_noaa_w_uids(fname):
 
 
 
-
-
-
-
-
-
-
-
+# get labels for tomnod data
 # modified to buffer the bounding boxes by 15 pixels
 def get_labels(fname):
     """
@@ -170,8 +151,6 @@ def get_labels(fname):
         if data['features'][i]['properties']['bb'] != []:
             try: 
                 b_id = data['features'][i]['properties']['IMAGE_ID']
-#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
-#                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
                 val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
                 
@@ -182,8 +161,6 @@ def get_labels(fname):
                 chips[i] = b_id
                 classes[i] = data['features'][i]['properties']['TYPE_ID']
             except:
-#                 print('i:', i)
-#                 print(data['features'][i]['properties']['bb'])
                   pass
             if val.shape[0] != 4:
                 print("Issues at %d!" % i)
@@ -193,7 +170,6 @@ def get_labels(fname):
             chips[i] = 'None'
     # debug
     # added offsets to each coordinates
-    # need to check the validity of bbox maybe
     coords = np.add(coords, add_np)
     
     return coords, chips, classes
@@ -232,8 +208,6 @@ def get_labels_w_uid(fname):
         if data['features'][i]['properties']['bb'] != []:
             try:
                 b_id = data['features'][i]['properties']['IMAGE_ID']
-#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
-#                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
                 val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
 
@@ -246,8 +220,6 @@ def get_labels_w_uid(fname):
                 # debug
                 uids[i] = int(data['features'][i]['properties']['bb_uid'])
             except:
-#                 print('i:', i)
-#                 print(data['features'][i]['properties']['bb'])
                   pass
             if val.shape[0] != 4:
                 print("Issues at %d!" % i)
@@ -299,8 +271,6 @@ def get_labels_w_uid_nondamaged(fname):
         if data['features'][i]['properties']['bb'] != []:
             try: 
                 b_id = data['features'][i]['properties']['Joined lay']
-#                 if b_id == '20170831_105001000B95E100_3020021_jpeg_compressed_06_01.tif':
-#                     print('found chip!')
                 bbox = data['features'][i]['properties']['bb'][1:-1].split(",")
                 val = np.array([int(num) for num in data['features'][i]['properties']['bb'][1:-1].split(",")])
                 
@@ -309,8 +279,6 @@ def get_labels_w_uid_nondamaged(fname):
                 # debug
                 uids[i] = int(data['features'][i]['properties']['uniqueid'])
             except:
-#                 print('i:', i)
-#                 print(data['features'][i]['properties']['bb'])
                   pass
             if val.shape[0] != 4:
                 print("Issues at %d!" % i)

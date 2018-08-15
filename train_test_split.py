@@ -23,10 +23,8 @@ def seperate_nfiles(abs_dirname, traindir, testdir, split_percent):
 
     i = 0
     parent_folder = os.path.abspath(abs_dirname + "/../")
-    #seperate_subdir = None
     traindir_name = os.path.join(parent_folder, traindir)
     testdir_name = os.path.join(parent_folder, testdir)
-    #seperate_subdir = subdir_name
     os.mkdir(traindir_name)
     os.mkdir(testdir_name)
     print('traindir_name', traindir_name)
