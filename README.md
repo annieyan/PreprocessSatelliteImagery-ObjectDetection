@@ -2,7 +2,7 @@
 
 # **Disclaimer**
 
-This repository is dual-licensed under Apache 2.0 and Creative Common Attribution-NonCommercial-NoDerivs CC BY-NC-ND 4.0.
+This repository is dual-licensed under Apache 2.0 and Creative Common Attribution-NonCommercial-NoDerivs CC BY-NC-ND 4.0 (see license files attached in this repository).
 
 This repository is modified from the code for the [ the DIUx xView Detection Challenge](https://github.com/DIUx-xView). The paper is available [here](https://arxiv.org/abs/1802.07856). 
 
