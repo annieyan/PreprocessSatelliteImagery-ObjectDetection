@@ -2,6 +2,8 @@
 
 # **Disclaimer**
 
+This repository is dual-licensed under Apache 2.0 and Creative Common Attribution-NonCommercial-NoDerivs CC BY-NC-ND 4.0.
+
 This repository is modified from the code for the [ the DIUx xView Detection Challenge](https://github.com/DIUx-xView). The paper is available [here](https://arxiv.org/abs/1802.07856). 
 
 This repository is created for [Automatic Damage Annotation on Post-Hurricane Satellite Imagery](https://dds-lab.github.io/disaster-damage-detection/), one of three [projects](https://escience.washington.edu/2018-data-science-for-social-good-projects/) from the 2018 Data Science for Social Good summer fellowship at the University of Washington eScience Institute. 
