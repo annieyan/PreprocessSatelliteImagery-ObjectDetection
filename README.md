@@ -1,5 +1,3 @@
-# harvey_data_process
-
 # **Disclaimer**
 
 This repository is dual-licensed under Apache 2.0 and Creative Common Attribution-NonCommercial-NoDerivs CC BY-NC-ND 4.0 (see license files attached in this repository).
