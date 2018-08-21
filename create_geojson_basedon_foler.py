@@ -1,4 +1,12 @@
 '''
+Copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+
+'''
+
+
+'''
 Create a geojson file which contains labels for bounding boxes  
 according to the files in a given folder
 '''

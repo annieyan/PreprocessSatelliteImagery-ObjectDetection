@@ -15,6 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 Modifications copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+
 """
 
 

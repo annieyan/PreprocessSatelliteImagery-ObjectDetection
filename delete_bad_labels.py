@@ -1,4 +1,11 @@
 '''
+Copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+
+'''
+
+'''
 This is to delete bad bboxes from geojson that manually identified
 1. Use the original geojson and training/test chips, run process_wv.py to produce
    512 x 512 small chips with bboxes in a folder called 'harvey_img_inspect_train (test)'

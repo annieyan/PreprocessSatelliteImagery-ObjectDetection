@@ -1,4 +1,10 @@
 '''
+Copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+'''
+
+'''
 Split train : test = 8:2
 create two folders: harvey_train_(round_num) and harvey_test_(round_num)
 create two geojson files respectively for train and test

@@ -1,3 +1,10 @@
+'''
+Copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+
+'''
+
 # select image chips that are with digital globe labels
 
 

@@ -1,4 +1,12 @@
 '''
+Copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+
+'''
+
+
+'''
 Get the statistics of training data and testing data
 1) # of bounding boxes in train / test /total
 2) # of 2048 x 2048 chips in train/ test /total

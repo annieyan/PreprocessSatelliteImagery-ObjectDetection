@@ -1,4 +1,11 @@
 '''
+Copyright (C) 2018 <eScience Institue at University of Washington>
+Licensed under CC BY-NC-ND 4.0 License [see LICENSE-CC BY-NC-ND 4.0.markdown for details] 
+Written by An Yan
+
+'''
+
+'''
 From training data, create toy validation data for visualization
 of model inferences. Note that the toy validation data may contain
 training data as well as data used for validation by the model
